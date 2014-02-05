@@ -47,7 +47,10 @@ int main()
     h_P = (float *)malloc(size);
     h_M = (float *)malloc(size);
     h_N = (float *)malloc(size);
-    for(i=0;i<n*n;i++){*(h_M+i)=(float)i; 
-                     *(h_N+i)=(float)i;}
+    for(i=0;i<n*n;i++)
+    {
+        *(h_M+i)=(float)i; 
+        *(h_N+i)=(float)i;
+    }
     matMulDevice(h_M,h_N,h_P,n);
 }
