@@ -191,8 +191,8 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
    /* Enqueue multiplication kernel */
  //  global_size[0] = ceil(width/BLOCK_WIDTH);
 //   global_size[1] = ceil(width/BLOCK_WIDTH);
-   global_size[0] =512;
-   global_size[1] = 512;
+   global_size[0] =width;
+   global_size[1] = width;
    local_size[0] = BLOCK_WIDTH;
    local_size[1] = BLOCK_WIDTH;
    

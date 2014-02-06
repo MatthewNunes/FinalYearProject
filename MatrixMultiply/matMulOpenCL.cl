@@ -3,7 +3,7 @@ __kernel void matMulKernel(__global float *d_M, __global float *d_N, __global fl
 	__private int row = get_global_id(1);
 	__private int col = get_global_id(0);
 	__private int k;
-	__private int width = 512;
+	__private int width = wwidth;
 	if ((row < width)&&(col<width))
 	{
 		__private float pValue = 0.0;
