@@ -158,7 +158,7 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
 	  exit(1);   
    }
    n_buffer = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(float) * width * width, h_N, &err);
-   p_buffer = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(float) * width * width, h_P, &err);
+   p_buffer = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(float) * width * width, h_P, &err);
 
    /* Create a command queue */
    queue = clCreateCommandQueue(context, device, 0, &err);
@@ -171,25 +171,33 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
    err = clSetKernelArg(mult_kernel, 0, sizeof(cl_mem), &m_buffer);
    err |= clSetKernelArg(mult_kernel, 1, sizeof(cl_mem), &n_buffer);
    err |= clSetKernelArg(mult_kernel, 2, sizeof(cl_mem), &p_buffer);
-   err |= clSetKernelArg(mult_kernel, 3, sizeof(uint), &doubleWidth);
+   err |= clSetKernelArg(mult_kernel, 3, sizeof(uint), &width);
    if(err < 0) {
 	  printf("Couldn't set an argument for the transpose kernel");
 	  exit(1);   
    }
    
-     
+
+   
 	/* Enqueue command to map buffer to host memory */
+   /**
    mapped_memory = clEnqueueMapBuffer(queue, p_buffer, CL_TRUE, CL_MAP_READ, 0, sizeof(float) * width * width, 0, NULL, NULL, &err);
    if(err < 0) {
 	  perror("Couldn't map the buffer to host memory");
 	  exit(1);   
    }
-
+   */
+   
    /* Enqueue multiplication kernel */
-   global_size[0] = ceil(width/(float)BLOCK_WIDTH);
-   global_size[1] = ceil(width/(float)BLOCK_WIDTH);
+ //  global_size[0] = ceil(width/BLOCK_WIDTH);
+//   global_size[1] = ceil(width/BLOCK_WIDTH);
+   global_size[0] =512;
+   global_size[1] = 512;
    local_size[0] = BLOCK_WIDTH;
    local_size[1] = BLOCK_WIDTH;
+   
+   size_t global_test = doubleWidth / 8;
+   size_t local_test = 8;
    size_t max;
    clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max), &max, NULL);
    printf("Max: %d\n", max);
@@ -212,18 +220,36 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
 	  perror("Couldn't enqueue the multiplication kernel");
 	  exit(1);    
    } 
-
+   clFinish(queue);
    /* Read output buffer */
-   memcpy(h_P, mapped_memory, sizeof(float) * width * width); 
-   
+   //memcpy(h_P, mapped_memory, sizeof(float) * width * width); 
+       err = clEnqueueReadBuffer(queue, p_buffer, CL_TRUE, 0, sizeof(float)*width*width, h_P, 0, NULL, NULL);
+    printf("----------------------\n");
+    printf("CL_INVALID_COMMAND_QUEUE: %d\n", CL_INVALID_COMMAND_QUEUE);
+    printf("CL_INVALID_CONTEXT: %d\n", CL_INVALID_CONTEXT);
+    printf("CL_INVALID_MEM_OBJECT: %d\n", CL_INVALID_MEM_OBJECT);
+    printf("CL_INVALID_VALUE: %d\n", CL_INVALID_VALUE);
+    printf("CL_INVALID_EVENT_WAIT_LIST: %d\n", CL_INVALID_EVENT_WAIT_LIST);
+    printf("CL_MEM_OBJECT_ALLOCATION_FAILURE: %d\n", CL_MEM_OBJECT_ALLOCATION_FAILURE);
+    printf("CL_OUT_OF_HOST_MEMORY: %d\n", CL_OUT_OF_HOST_MEMORY);
+   if(err < 0) {
+      printf("Error: %d\n", err);
+      perror("Couldn't read the buffer");
+      exit(1);   
+   } 
    /* Unmap memory */ 
    int ind = 0;
-   for(ind = 0; (ind+3) < width *width; ind+=4)
+   int in =0;
+   for(ind = 0; (ind+ 8) < (width*width); ind+=8)
    {
+      in +=1;
     //printf("hi");
-   	printf("%f, %f, %f, %f\n", *(h_P+ind), *(h_P+ind+1), *(h_P+ind+2), *(h_P+ind+3));
+    //printf("%f\n", h_P[ind]);
+     printf("%d: %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f\n",in, h_P[ind], h_P[ind + 1], h_P[ind + 2], h_P[ind + 3], h_P[ind + 4], h_P[ind + 5], h_P[ind + 6], h_P[ind + 7]);
    }
-   err = clEnqueueUnmapMemObject(queue, p_buffer, mapped_memory, 0, NULL, NULL);
+   in +=1;
+   printf("%d: %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f\n",in, *(h_P+ind), *(h_P+ind+1), *(h_P+ind+2), *(h_P+ind+3), *(h_P+ind+4), *(h_P+ind+5), *(h_P+ind+6), *(h_P+ind+7));
+   //err = clEnqueueUnmapMemObject(queue, p_buffer, mapped_memory, 0, NULL, NULL);
    if(err < 0) {
 	  perror("Couldn't unmap the buffer");
 	  exit(1);   
@@ -246,6 +272,7 @@ int main()
 	h_P = (float *)malloc(size);
 	h_M = (float *)malloc(size);
 	h_N = (float *)malloc(size);
+   int c = 2;
 	for(i=0;i<n*n;i++)
 	{
 		*(h_M+i)=(float)i; 
