@@ -16,10 +16,7 @@ __kernel void matMulKernel(__global float *d_M, __global float *d_N, __local flo
 		d_Nds[ty * twidth + tx] = d_N[(m*twidth+ty)* wwidth+col];
 		barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
 		
-		for (k  =0; k < twidth; k++)
-		{
-			pValue += d_Mds[ty*twidth+k] * d_Nds[k*twidth+tx];
-		}
+		for (k  =0; k < twidth; k++)	pValue += d_Mds[ty*twidth+k] * d_Nds[k*twidth+tx];
 		barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
 	}
 	d_P[row*width+col] = pValue;

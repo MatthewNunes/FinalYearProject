@@ -172,8 +172,8 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
    /* Create arguments for multiplication kernel */
    err = clSetKernelArg(mult_kernel, 0, sizeof(cl_mem), &m_buffer);
    err |= clSetKernelArg(mult_kernel, 1, sizeof(cl_mem), &n_buffer);
-   err |= clSetKernelArg(mult_kernel, 2, TILE_WIDTH * TILE_WIDTH, NULL);
-   err |= clSetKernelArg(mult_kernel, 3, TILE_WIDTH * TILE_WIDTH, NULL);
+   err |= clSetKernelArg(mult_kernel, 2, TILE_WIDTH * TILE_WIDTH * sizeof(cl_float), NULL);
+   err |= clSetKernelArg(mult_kernel, 3, TILE_WIDTH * TILE_WIDTH * sizeof(cl_float), NULL);
    err |= clSetKernelArg(mult_kernel, 4, sizeof(cl_mem), &p_buffer);
    err |= clSetKernelArg(mult_kernel, 5, sizeof(uint), &width);
    err |= clSetKernelArg(mult_kernel, 6, sizeof(uint), &twidth);
