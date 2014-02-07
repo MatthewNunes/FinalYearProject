@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/time.h>
 #include <CL/cl.h>
 
 
@@ -113,11 +115,14 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int Width)
 void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
 {
 	   /* Host/device data structures */
+   struct timeval tim;
    cl_device_id device;
    cl_context context;
    cl_command_queue queue;
    cl_program program;
    cl_kernel mult_kernel;
+   cl_event timing_event;
+   cl_ulong time_start, time_end, total_time;
    size_t global_size[2];
    size_t local_size[2];
    cl_ulong mem_size;
@@ -161,7 +166,7 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
    p_buffer = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(float) * width * width, h_P, &err);
 
    /* Create a command queue */
-   queue = clCreateCommandQueue(context, device, 0, &err);
+   queue = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, &err);
    if(err < 0) {
 	  perror("Couldn't create a command queue");
 	  exit(1);   
@@ -200,38 +205,26 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
    size_t local_test = 8;
    size_t max;
    clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max), &max, NULL);
-   printf("Max: %d\n", max);
-   err = clEnqueueNDRangeKernel(queue, mult_kernel, 2, NULL, global_size, local_size, 0, NULL, NULL);
-   printf("CL_INVALID_PROGRAM_EXECUTABLE: %d\n", CL_INVALID_PROGRAM_EXECUTABLE);
-   printf("CL_INVALID_COMMAND_QUEUE: %d\n", CL_INVALID_COMMAND_QUEUE);
-   printf("CL_INVALID_KERNEL: %d\n", CL_INVALID_KERNEL);
-   printf("CL_INVALID_CONTEXT: %d\n", CL_INVALID_CONTEXT);
-   printf("CL_INVALID_KERNEL_ARGS: %d\n", CL_INVALID_KERNEL_ARGS);
-   printf("CL_INVALID_WORK_DIMENSION: %d\n", CL_INVALID_WORK_DIMENSION);
-   printf("CL_INVALID_WORK_GROUP_SIZE: %d\n", CL_INVALID_WORK_GROUP_SIZE);
-   printf("CL_INVALID_WORK_ITEM_SIZE: %d\n", CL_INVALID_WORK_ITEM_SIZE);
-   printf("CL_INVALID_GLOBAL_OFFSET: %d\n", CL_INVALID_GLOBAL_OFFSET);
-   printf("CL_OUT_OF_RESOURCES: %d\n", CL_OUT_OF_RESOURCES);
-   printf("CL_MEM_OBJECT_ALLOCATION_FAILURE: %d\n", CL_MEM_OBJECT_ALLOCATION_FAILURE);
-   printf("CL_INVALID_EVENT_WAIT_LIST: %d\n", CL_INVALID_EVENT_WAIT_LIST);
-   printf("CL_OUT_OF_HOST_MEMORY: %d\n", CL_OUT_OF_HOST_MEMORY);
+   gettimeofday(&tim, NULL);
+   double t1=tim.tv_sec+(tim.tv_usec/1000000.0);
+   err = clEnqueueNDRangeKernel(queue, mult_kernel, 2, NULL, global_size, local_size, 0, NULL, &timing_event);
    if(err < 0) {
    	  printf("Err: %d\n", err);
 	  perror("Couldn't enqueue the multiplication kernel");
 	  exit(1);    
    } 
    clFinish(queue);
+   gettimeofday(&tim, NULL);
+   double t2=tim.tv_sec+(tim.tv_usec/1000000.0);
+   clGetEventProfilingInfo(timing_event, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL);
+   clGetEventProfilingInfo(timing_event, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL);
+   total_time = time_end - time_start;
+   double tt;
+   tt = total_time / (float) 1000000000;
+   
    /* Read output buffer */
    //memcpy(h_P, mapped_memory, sizeof(float) * width * width); 
-       err = clEnqueueReadBuffer(queue, p_buffer, CL_TRUE, 0, sizeof(float)*width*width, h_P, 0, NULL, NULL);
-    printf("----------------------\n");
-    printf("CL_INVALID_COMMAND_QUEUE: %d\n", CL_INVALID_COMMAND_QUEUE);
-    printf("CL_INVALID_CONTEXT: %d\n", CL_INVALID_CONTEXT);
-    printf("CL_INVALID_MEM_OBJECT: %d\n", CL_INVALID_MEM_OBJECT);
-    printf("CL_INVALID_VALUE: %d\n", CL_INVALID_VALUE);
-    printf("CL_INVALID_EVENT_WAIT_LIST: %d\n", CL_INVALID_EVENT_WAIT_LIST);
-    printf("CL_MEM_OBJECT_ALLOCATION_FAILURE: %d\n", CL_MEM_OBJECT_ALLOCATION_FAILURE);
-    printf("CL_OUT_OF_HOST_MEMORY: %d\n", CL_OUT_OF_HOST_MEMORY);
+   err = clEnqueueReadBuffer(queue, p_buffer, CL_TRUE, 0, sizeof(float)*width*width, h_P, 0, NULL, NULL);
    if(err < 0) {
       printf("Error: %d\n", err);
       perror("Couldn't read the buffer");
@@ -249,6 +242,8 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
    }
    in +=1;
    printf("%d: %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f\n",in, *(h_P+ind), *(h_P+ind+1), *(h_P+ind+2), *(h_P+ind+3), *(h_P+ind+4), *(h_P+ind+5), *(h_P+ind+6), *(h_P+ind+7));
+   printf("\n%lf seconds elapsed\n", tt);
+    printf("%.6lf seconds elapsed\n", t2-t1);
    //err = clEnqueueUnmapMemObject(queue, p_buffer, mapped_memory, 0, NULL, NULL);
    if(err < 0) {
 	  perror("Couldn't unmap the buffer");

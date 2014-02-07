@@ -4,7 +4,8 @@
 #define WIDTH 512
 #define BLOCK_WIDTH 16
 #define TILE_WIDTH 16
-
+#include <sys/types.h>
+#include <sys/time.h>
 __global__ 
 void matMulTiledKernel(float *d_M, float *d_N, float *d_P, int Width)
 { 
@@ -28,6 +29,7 @@ void matMulTiledKernel(float *d_M, float *d_N, float *d_P, int Width)
 
 void matMulDevice(float *h_M, float *h_N, float *h_P, int Width)
 {
+    struct timeval tim;
     int size = Width * Width * sizeof(float); 
     float *d_M, *d_N, *d_P;
 // Step 1: Allocate and Load M, N to device memory 
@@ -42,7 +44,11 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int Width)
    dim3 dimGrid(numBlocks,numBlocks);
    dim3 dimBlock(BLOCK_WIDTH, BLOCK_WIDTH);
 // Step 3b: Launch the device computation threads!
+   gettimeofday(&tim, NULL);
+   double t1=tim.tv_sec+(tim.tv_usec/1000000.0);
    matMulTiledKernel<<<dimGrid, dimBlock>>>(d_M, d_N, d_P, Width);
+   gettimeofday(&tim, NULL);
+   double t2=tim.tv_sec+(tim.tv_usec/1000000.0);
 // Step 4: Copy back result, and free memory on device
    cudaMemcpy(h_P, d_P, size, cudaMemcpyDeviceToHost);
       int ind = 0;
@@ -56,7 +62,7 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int Width)
    }
    in +=1;
    printf("%d: %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f\n",in, *(h_P+ind), *(h_P+ind+1), *(h_P+ind+2), *(h_P+ind+3), *(h_P+ind+4), *(h_P+ind+5), *(h_P+ind+6), *(h_P+ind+7));
-
+   printf("%.6lf seconds elapsed\n", t2-t1);
    cudaFree(d_M); cudaFree(d_N); cudaFree(d_P);
 }
 

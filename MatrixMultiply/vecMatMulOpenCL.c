@@ -1,7 +1,6 @@
-#define PROGRAM_FILE "shMatMulOpenCL.cl"
-#define MAT_MUL_KERNEL "matMulKernel"
-#define BLOCK_WIDTH 16
-#define TILE_WIDTH 16
+#define PROGRAM_FILE "vecMatMulOpenCL.cl"
+#define MAT_MUL_KERNEL "matrix_mult"
+#define BLOCK_WIDTH 8
 #define WIDTH 512
 
 #include <stdio.h>
@@ -12,7 +11,7 @@
 #include <sys/time.h>
 #include <CL/cl.h>
 
-
+/* Find a GPU or CPU associated with the first available platform */
 cl_device_id create_device() {
 
    cl_platform_id platform;
@@ -41,6 +40,7 @@ cl_device_id create_device() {
 
 /* Create program from a file and compile it */
 cl_program build_program(cl_context ctx, cl_device_id dev, const char* filename) {
+
    cl_program program;
    FILE *program_handle;
    char *program_buffer, *program_log;
@@ -88,30 +88,6 @@ cl_program build_program(cl_context ctx, cl_device_id dev, const char* filename)
    return program;
 }
 
-/**
-void matMulDevice(float *h_M, float *h_N, float *h_P, int Width)
-{
-	int size = Width * Width * sizeof(float); 
-	float *d_M, *d_N, *d_P;
-// Step 1: Allocate and Load M, N to device memory 
-	cudaMalloc((void **)&d_M, size);
-	cudaMemcpy(d_M, h_M, size, cudaMemcpyHostToDevice);
-	cudaMalloc((void **)&d_N, size);
-	cudaMemcpy(d_N, h_N, size, cudaMemcpyHostToDevice);
-// Step 2: Allocate P on the device
-	cudaMalloc((void **)&d_P, size);
-// Step 3a: Set up execution configuration
-   int numBlocks = ceil(Width/(float)BLOCK_WIDTH);
-   dim3 dimGrid(numBlocks,numBlocks);
-   dim3 dimBlock(BLOCK_WIDTH, BLOCK_WIDTH);
-// Step 3b: Launch the device computation threads!
-   matMulKernel<<<dimGrid, dimBlock>>>(d_M, d_N, d_P, Width);
-// Step 4: Copy back result, and free memory on device
-   cudaMemcpy(h_P, d_P, size, cudaMemcpyDeviceToHost);
-   cudaFree(d_M); cudaFree(d_N); cudaFree(d_P);
-}
-*/
-
 void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
 {
 	   /* Host/device data structures */
@@ -121,13 +97,12 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
    cl_command_queue queue;
    cl_program program;
    cl_kernel mult_kernel;
+   cl_event timing_event;
+   cl_ulong time_start, time_end, total_time;
    size_t global_size[2];
    size_t local_size[2];
    cl_ulong mem_size;
    cl_int i, j, k, err, check;
-   int twidth = TILE_WIDTH;
-   cl_event timing_event;
-   cl_ulong time_start, time_end, total_time;
 
    /* Data and buffers */
    cl_uint matrix_dim;
@@ -137,9 +112,22 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
    cl_mem m_buffer, n_buffer, p_buffer;
    void* mapped_memory;
    int doubleWidth = width * width;
+   float *h_NT = (float *)malloc(sizeof(float) * width * width);
+   int i1 = 0;
+   int j1= 0;
+   for(i1 =0; i1 < width; i1++)
+   {
+      for (j1 = 0; j1 < width; j1++)
+      {
+         h_NT[i1 * width + j1] = h_N[width * j1 + i1];
+      }
+   }
 
    /* Create a device and context */
    device = create_device();
+    cl_uint integerVectorWidth;
+    clGetDeviceInfo(device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT, sizeof(cl_uint), &integerVectorWidth, NULL);
+    
    context = clCreateContext(NULL, 1, &device, NULL, NULL, &err);
    if(err < 0) {
 	  perror("Couldn't create a context");
@@ -163,7 +151,7 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
 	  perror("Couldn't create a buffer");
 	  exit(1);   
    }
-   n_buffer = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(float) * width * width, h_N, &err);
+   n_buffer = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(float) * width * width, h_NT, &err);
    p_buffer = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(float) * width * width, h_P, &err);
 
    /* Create a command queue */
@@ -176,11 +164,8 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
    /* Create arguments for multiplication kernel */
    err = clSetKernelArg(mult_kernel, 0, sizeof(cl_mem), &m_buffer);
    err |= clSetKernelArg(mult_kernel, 1, sizeof(cl_mem), &n_buffer);
-   err |= clSetKernelArg(mult_kernel, 2, TILE_WIDTH * TILE_WIDTH * sizeof(cl_float), NULL);
-   err |= clSetKernelArg(mult_kernel, 3, TILE_WIDTH * TILE_WIDTH * sizeof(cl_float), NULL);
-   err |= clSetKernelArg(mult_kernel, 4, sizeof(cl_mem), &p_buffer);
-   err |= clSetKernelArg(mult_kernel, 5, sizeof(uint), &width);
-   err |= clSetKernelArg(mult_kernel, 6, sizeof(uint), &twidth);
+   err |= clSetKernelArg(mult_kernel, 2, sizeof(cl_mem), &p_buffer);
+  // err |= clSetKernelArg(mult_kernel, 3, sizeof(uint), &width);
    if(err < 0) {
 	  printf("Couldn't set an argument for the transpose kernel");
 	  exit(1);   
@@ -201,17 +186,18 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
  //  global_size[0] = ceil(width/BLOCK_WIDTH);
 //   global_size[1] = ceil(width/BLOCK_WIDTH);
    global_size[0] =width;
-   global_size[1] = width;
-   local_size[0] = BLOCK_WIDTH;
-   local_size[1] = BLOCK_WIDTH;
+   global_size[1] = width/4;
+   local_size[0] = BLOCK_WIDTH/4;
+   local_size[1] = BLOCK_WIDTH/4;
    
    size_t global_test = doubleWidth / 8;
    size_t local_test = 8;
    size_t max;
    clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max), &max, NULL);
+   printf("Max: %d\n", max);
    gettimeofday(&tim, NULL);
    double t1=tim.tv_sec+(tim.tv_usec/1000000.0);
-   err = clEnqueueNDRangeKernel(queue, mult_kernel, 2, NULL, global_size, local_size, 0, NULL, &timing_event);
+   err = clEnqueueNDRangeKernel(queue, mult_kernel, 1, NULL, global_size, NULL, 0, NULL, &timing_event);
    if(err < 0) {
 	  printf("Err: %d\n", err);
 	  perror("Couldn't enqueue the multiplication kernel");
@@ -220,14 +206,14 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
    clFinish(queue);
    gettimeofday(&tim, NULL);
    double t2=tim.tv_sec+(tim.tv_usec/1000000.0);
+   /* Read output buffer */
+   //memcpy(h_P, mapped_memory, sizeof(float) * width * width); 
    clGetEventProfilingInfo(timing_event, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL);
    clGetEventProfilingInfo(timing_event, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL);
    total_time = time_end - time_start;
    double tt;
-   tt = total_time / (float) 1000000000;
-   /* Read output buffer */
-   //memcpy(h_P, mapped_memory, sizeof(float) * width * width); 
-	   err = clEnqueueReadBuffer(queue, p_buffer, CL_TRUE, 0, sizeof(float)*width*width, h_P, 0, NULL, NULL);
+   tt = total_time / (double) 1000000000;
+	err = clEnqueueReadBuffer(queue, p_buffer, CL_TRUE, 0, sizeof(float)*width*width, h_P, 0, NULL, NULL);
    if(err < 0) {
 	  printf("Error: %d\n", err);
 	  perror("Couldn't read the buffer");
@@ -245,10 +231,12 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
    }
    in +=1;
    printf("%d: %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f\n",in, *(h_P+ind), *(h_P+ind+1), *(h_P+ind+2), *(h_P+ind+3), *(h_P+ind+4), *(h_P+ind+5), *(h_P+ind+6), *(h_P+ind+7));
-   printf("\n%lf seconds elapsed\n", tt);
-   printf("%.6lf seconds elapsed\n", t2-t1);
    //err = clEnqueueUnmapMemObject(queue, p_buffer, mapped_memory, 0, NULL, NULL);
-   
+   printf("%lu\n", total_time);
+   printf("Preferred Vector Length: %d\n", integerVectorWidth);
+   printf("\n%.10lf seconds elapsed\n", tt);
+   printf("%lu\n", total_time);
+   printf("%.6lf seconds elapsed\n", t2-t1);
    if(err < 0) {
 	  perror("Couldn't unmap the buffer");
 	  exit(1);   
@@ -257,6 +245,7 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
    /* Deallocate resources */
    clReleaseMemObject(m_buffer);
    clReleaseMemObject(n_buffer);
+   clReleaseMemObject(p_buffer);
    clReleaseKernel(mult_kernel);
    clReleaseCommandQueue(queue);
    clReleaseProgram(program);
@@ -264,19 +253,18 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
   // return 0;
 }
 
-int main()
-{
+int main() {
 	float *h_M, *h_N, *h_P;
-	int i, n = WIDTH, size=sizeof(float)*n*n;
-	h_P = (float *)malloc(size);
-	h_M = (float *)malloc(size);
-	h_N = (float *)malloc(size);
+   int i, n = WIDTH, size=sizeof(float)*n*n;
+   h_P = (float *)malloc(size);
+   h_M = (float *)malloc(size);
+   h_N = (float *)malloc(size);
    int c = 2;
-	for(i=0;i<n*n;i++)
-	{
-		*(h_M+i)=(float)i; 
-		*(h_N+i)=(float)i;
-	}
-	matMulDevice(h_M,h_N,h_P,n);
-	return 0;
+   for(i=0;i<n*n;i++)
+   {
+      *(h_M+i)=(float)i; 
+      *(h_N+i)=(float)i;
+   }
+   matMulDevice(h_M,h_N,h_P,n);
+   return 0;
 }
