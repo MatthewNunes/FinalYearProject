@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/time.h>
@@ -103,21 +105,88 @@ void convertToOneD(int R[ROWSIZE][COLSIZE], int G[ROWSIZE][COLSIZE], int B[ROWSI
     {
       for (j=0; j < COLSIZE; j++)
       {
-	h_R[i*COLSIZE+j] = R[i][j];
-	h_G[i*COLSIZE+j] = G[i][j];
-	h_B[i*COLSIZE+j] = B[i][j];
+	  	h_R[i*COLSIZE+j] = R[i][j];
+		h_G[i*COLSIZE+j] = G[i][j];
+		h_B[i*COLSIZE+j] = B[i][j];
       }
     }
 
 }
 
+void getDimensions(char *filename, unsigned int *width, unsigned int *height)
+{
+	printf("I get here 44\n");
+	FILE *ff;
+	printf("I get here 55\n");
+	unsigned char *buffer;
+	printf("I get here 66\n");
+	unsigned char widthBuffer[4];
+	printf("I get here 77\n");
+	unsigned char heightBuffer[4];
+	printf("I get here 88\n");
+	unsigned char *widthString;
+	printf("I get here 99\n");
+	unsigned char *heightString;
+	printf("I get here 1\n");
+	ff = fopen(filename, "rb");
+	printf("I get here 2\n");
+	buffer = (unsigned char *) malloc (sizeof(unsigned char)*24);
+	printf("I get here 3\n");
+	widthString = (unsigned char *) malloc(sizeof(unsigned char) * 4);
+	printf("I get here 4\n");
+	heightString = (unsigned char *)malloc(sizeof(unsigned char) * 4);
+	printf("I get here 5\n");
+	size_t result = fread (buffer,1,24,ff);
+	printf("I get here 6\n");
+	int i = 0;
+	int j = 0;
+	for (i = 16; i < 20; i++)
+	{
+		widthBuffer[j] = *(buffer+i);
+		j++;
+	}
+	printf("I get here 7\n");
+	sprintf((char *)widthString, "%02X%02X%02X%02X", widthBuffer[0], widthBuffer[1], widthBuffer[2], widthBuffer[3]);
+	printf("I get here 8\n");
+	//printf("String: %s\n", widthString); 
+	*width = (int)strtol((const char *)widthString, NULL, 16);
+	printf("I get here 9\n");
+	//printf("Width: %d\n",width);
+	
+	j= 0;
+	for (i = 20; i < 24; i++)
+	{
+		heightBuffer[j] = *(buffer+i);
+		j++;
+	}
+	printf("I get here 10\n");
+	sprintf((char *)heightString, "%02X%02X%02X%02X", heightBuffer[0], heightBuffer[1], heightBuffer[2], heightBuffer[3]);
+	printf("I get here 11\n");
+	//printf("String: %s\n", heightString);
+	*height = (int)strtol((const char *)heightString, NULL, 16);
+	printf("I get here 12\n");
+	//printf("Height: %d\n", height);
+	fclose(ff);
+	printf("I get here 13\n");
+	free(buffer);
+	printf("I get here 14\n");
+	free(widthString);
+	printf("I get here 15\n");
+	free(heightString);
+	printf("I get here 16\n");
+	return;
+}
+
 int main (int argc, const char * argv[]) {
     // insert code here...
+	unsigned int width;
+	unsigned int height;
+	getDimensions("./test2.png", &width, &height);
 	struct timeval tim;
 	gettimeofday(&tim, NULL);
 	double tTotal1=tim.tv_sec+(tim.tv_usec/1000000.0);
-	int size = ROWSIZE * COLSIZE;
-	static int const maxlen = 200, rowsize = 521, colsize = 428, linelen = 12;
+	int size = width * height;
+	static int const maxlen = 200, rowsize = height, colsize = width, linelen = 12;
 	char str[maxlen], lines[5][maxlen];
 	FILE *fp, *fout;
 	int nlines = 0;
@@ -126,7 +195,6 @@ int main (int argc, const char * argv[]) {
 	int R[rowsize][colsize], G[rowsize][colsize], B[rowsize][colsize];
 	//int Rnew[rowsize][colsize], Gnew[rowsize][colsize], Bnew[rowsize][colsize];
 	int row = 0, col = 0, nblurs, lineno, k;
-	
 	int *d_R;
 	int *d_G;
 	int *d_B;
@@ -141,7 +209,7 @@ int main (int argc, const char * argv[]) {
 	h_Bnew = (int *)malloc(sizeof(int) * size);
 	gettimeofday(&tim, NULL);
 	double t1=tim.tv_sec+(tim.tv_usec/1000000.0);
-	fp = fopen("./David.ps", "r");
+	fp = fopen("./test2.png", "r");
 	
 	while(! feof(fp))
 	{
@@ -174,8 +242,19 @@ int main (int argc, const char * argv[]) {
 	nblurs = 10;
       	printf("\nGive the number of times to blur the image\n");
       	int icheck = scanf ("%d", &nblurs);
+	int i;
+	int j;
+    for (i =0; i < rowsize; i++)
+	{
+	  for (j=0; j < colsize; j++)
+	  {
+		h_R[i*colsize+j] = R[i][j];
+		h_G[i*colsize+j] = G[i][j];
+		h_B[i*colsize+j] = B[i][j];
+	  }
+	}
+	//convertToOneD(R, G, B, h_R, h_B, h_G);
 	
-	convertToOneD(R, G, B, h_R, h_B, h_G);
 	gettimeofday(&tim, NULL);
 	double t3=tim.tv_sec+(tim.tv_usec/1000000.0);
 	cudaMalloc((void **)&d_R, size *sizeof(int));
@@ -191,7 +270,7 @@ int main (int argc, const char * argv[]) {
 	cudaMemcpy(d_R, h_R, size*sizeof(int), cudaMemcpyHostToDevice);
 	cudaMemcpy(d_G, h_G, size*sizeof(int), cudaMemcpyHostToDevice);
 	cudaMemcpy(d_B, h_B, size*sizeof(int), cudaMemcpyHostToDevice);
-	dim3 dimGrid(ceil(COLSIZE/(float)TX),ceil(ROWSIZE/(float)TY),1);
+	dim3 dimGrid(ceil(colsize/(float)TX),ceil(rowsize/(float)TY),1);
 	dim3 dimBlock(TX,TY,1);
 	
 	//gettimeofday(&tim, NULL);
@@ -199,8 +278,8 @@ int main (int argc, const char * argv[]) {
 	gettimeofday(&tim, NULL);
 	double t5=tim.tv_sec+(tim.tv_usec/1000000.0);
 	for(k=0;k<nblurs;k++){
-	  performUpdatesKernel<<<dimGrid,dimBlock>>>(d_R, d_G, d_B, d_Rnew, d_Gnew, d_Bnew, ROWSIZE, COLSIZE);
-	  doCopyKernel<<<dimGrid, dimBlock>>>(d_R, d_G, d_B, d_Rnew, d_Gnew, d_Bnew, ROWSIZE, COLSIZE);
+	  performUpdatesKernel<<<dimGrid,dimBlock>>>(d_R, d_G, d_B, d_Rnew, d_Gnew, d_Bnew, rowsize, colsize);
+	  doCopyKernel<<<dimGrid, dimBlock>>>(d_R, d_G, d_B, d_Rnew, d_Gnew, d_Bnew, rowsize, colsize);
 	}
 	gettimeofday(&tim, NULL);
 	double t6=tim.tv_sec+(tim.tv_usec/1000000.0);
@@ -219,14 +298,14 @@ int main (int argc, const char * argv[]) {
 	
 	int kk = 0;
 	int mm = 0;
-	for (kk = 0; kk < ROWSIZE; kk++)
+	for (kk = 0; kk < rowsize; kk++)
 	{
-	  for (mm=0; mm<COLSIZE; mm++)
+	  for (mm=0; mm<colsize; mm++)
 	  {
-	    R[kk][mm] = h_Rnew[COLSIZE*kk +mm];
+	    R[kk][mm] = h_Rnew[colsize*kk +mm];
 	    //printf(" %d ", h_Rnew[mm*kk +mm]);
-	    G[kk][mm] = h_Gnew[COLSIZE*kk +mm];
-	    B[kk][mm] = h_Bnew[COLSIZE*kk +mm];
+	    G[kk][mm] = h_Gnew[colsize*kk +mm];
+	    B[kk][mm] = h_Bnew[colsize*kk +mm];
 	    
 	  }
 	}
@@ -235,7 +314,7 @@ int main (int argc, const char * argv[]) {
 	
 	gettimeofday(&tim, NULL);
 	double t7=tim.tv_sec+(tim.tv_usec/1000000.0);
-	fout= fopen("./DavidBlur.ps", "w");
+	fout= fopen("./DavidBlur.png", "w");
 	for (k=0;k<nlines;k++) fprintf(fout,"\n%s", lines[k]);
 	fprintf(fout,"\n");
 	for(row=0;row<rowsize;row++){

@@ -9,7 +9,6 @@
 #include <winsock.h>
 #endif
 
-#include <winsock.h>
 
 
 void main()
@@ -24,7 +23,7 @@ void main()
 	unsigned int height;
 	size_t result;
 	unsigned long ll = 320;
-	fp = fopen("./test.png", "rb");
+	fp = fopen("./test3.png", "rb");
 	
 	buffer = (unsigned char*) malloc (sizeof(unsigned char)*24);
 	widthString = (unsigned char *) malloc(sizeof(unsigned char) * 4);
