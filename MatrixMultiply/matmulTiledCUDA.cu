@@ -44,25 +44,19 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int Width)
    dim3 dimGrid(numBlocks,numBlocks);
    dim3 dimBlock(BLOCK_WIDTH, BLOCK_WIDTH);
 // Step 3b: Launch the device computation threads!
-   gettimeofday(&tim, NULL);
-   double t1=tim.tv_sec+(tim.tv_usec/1000000.0);
+   cudaEvent_t start, stop;
+   cudaEventCreate(&start);
+   cudaEventCreate(&stop);
+   cudaEventRecord(start, 0);
    matMulTiledKernel<<<dimGrid, dimBlock>>>(d_M, d_N, d_P, Width);
-   gettimeofday(&tim, NULL);
-   double t2=tim.tv_sec+(tim.tv_usec/1000000.0);
+   cudaEventRecord(stop, 0);
+   cudaEventSynchronize(stop);
+   float elapsedTime;
+   cudaEventElapsedTime(&elapsedTime, start, stop);
+   elapsedTime = elapsedTime / (float) 1000000;
 // Step 4: Copy back result, and free memory on device
    cudaMemcpy(h_P, d_P, size, cudaMemcpyDeviceToHost);
-      int ind = 0;
-   int in =0;
-   for(ind = 0; (ind+ 8) < (Width*Width); ind+=8)
-   {
-      in +=1;
-    //printf("hi");
-    //printf("%f\n", h_P[ind]);
-     printf("%d: %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f\n",in, h_P[ind], h_P[ind + 1], h_P[ind + 2], h_P[ind + 3], h_P[ind + 4], h_P[ind + 5], h_P[ind + 6], h_P[ind + 7]);
-   }
-   in +=1;
-   printf("%d: %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f\n",in, *(h_P+ind), *(h_P+ind+1), *(h_P+ind+2), *(h_P+ind+3), *(h_P+ind+4), *(h_P+ind+5), *(h_P+ind+6), *(h_P+ind+7));
-   printf("%.6lf seconds elapsed\n", t2-t1);
+   printf("%.6f seconds elapsed\n", elapsedTime);
    cudaFree(d_M); cudaFree(d_N); cudaFree(d_P);
 }
 

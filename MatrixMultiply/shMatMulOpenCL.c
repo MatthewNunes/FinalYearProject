@@ -209,8 +209,6 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
    size_t local_test = 8;
    size_t max;
    clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max), &max, NULL);
-   gettimeofday(&tim, NULL);
-   double t1=tim.tv_sec+(tim.tv_usec/1000000.0);
    err = clEnqueueNDRangeKernel(queue, mult_kernel, 2, NULL, global_size, local_size, 0, NULL, &timing_event);
    if(err < 0) {
 	  printf("Err: %d\n", err);
@@ -218,8 +216,6 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
 	  exit(1);    
    } 
    clFinish(queue);
-   gettimeofday(&tim, NULL);
-   double t2=tim.tv_sec+(tim.tv_usec/1000000.0);
    clGetEventProfilingInfo(timing_event, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL);
    clGetEventProfilingInfo(timing_event, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL);
    total_time = time_end - time_start;
@@ -233,20 +229,8 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
 	  perror("Couldn't read the buffer");
 	  exit(1);   
    } 
-   /* Unmap memory */ 
-   int ind = 0;
-   int in =0;
-   for(ind = 0; (ind+ 8) < (width*width); ind+=8)
-   {
-	  in +=1;
-	//printf("hi");
-	//printf("%f\n", h_P[ind]);
-	 printf("%d: %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f\n",in, h_P[ind], h_P[ind + 1], h_P[ind + 2], h_P[ind + 3], h_P[ind + 4], h_P[ind + 5], h_P[ind + 6], h_P[ind + 7]);
-   }
-   in +=1;
-   printf("%d: %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f\n",in, *(h_P+ind), *(h_P+ind+1), *(h_P+ind+2), *(h_P+ind+3), *(h_P+ind+4), *(h_P+ind+5), *(h_P+ind+6), *(h_P+ind+7));
-   printf("\n%lf seconds elapsed\n", tt);
-   printf("%.6lf seconds elapsed\n", t2-t1);
+
+   printf("\n%.6lf seconds elapsed\n", tt);
    //err = clEnqueueUnmapMemObject(queue, p_buffer, mapped_memory, 0, NULL, NULL);
    
    if(err < 0) {

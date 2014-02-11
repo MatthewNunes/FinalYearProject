@@ -1,6 +1,6 @@
 #define PROGRAM_FILE "vecMatMulOpenCL.cl"
 #define MAT_MUL_KERNEL "matrix_mult"
-#define BLOCK_WIDTH 8
+#define BLOCK_WIDTH 16
 #define WIDTH 512
 
 #include <stdio.h>
@@ -186,7 +186,7 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
  //  global_size[0] = ceil(width/BLOCK_WIDTH);
 //   global_size[1] = ceil(width/BLOCK_WIDTH);
    global_size[0] =width;
-   global_size[1] = width/4;
+   //global_size[1] = width/4;
    local_size[0] = BLOCK_WIDTH/4;
    local_size[1] = BLOCK_WIDTH/4;
    
@@ -195,8 +195,6 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
    size_t max;
    clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max), &max, NULL);
    printf("Max: %d\n", max);
-   gettimeofday(&tim, NULL);
-   double t1=tim.tv_sec+(tim.tv_usec/1000000.0);
    err = clEnqueueNDRangeKernel(queue, mult_kernel, 1, NULL, global_size, NULL, 0, NULL, &timing_event);
    if(err < 0) {
 	  printf("Err: %d\n", err);
@@ -204,8 +202,6 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
 	  exit(1);    
    } 
    clFinish(queue);
-   gettimeofday(&tim, NULL);
-   double t2=tim.tv_sec+(tim.tv_usec/1000000.0);
    /* Read output buffer */
    //memcpy(h_P, mapped_memory, sizeof(float) * width * width); 
    clGetEventProfilingInfo(timing_event, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL);
@@ -220,23 +216,9 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
 	  exit(1);   
    } 
    /* Unmap memory */ 
-   int ind = 0;
-   int in =0;
-   for(ind = 0; (ind+ 8) < (width*width); ind+=8)
-   {
-	  in +=1;
-	//printf("hi");
-	//printf("%f\n", h_P[ind]);
-	 printf("%d: %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f\n",in, h_P[ind], h_P[ind + 1], h_P[ind + 2], h_P[ind + 3], h_P[ind + 4], h_P[ind + 5], h_P[ind + 6], h_P[ind + 7]);
-   }
-   in +=1;
-   printf("%d: %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f\n",in, *(h_P+ind), *(h_P+ind+1), *(h_P+ind+2), *(h_P+ind+3), *(h_P+ind+4), *(h_P+ind+5), *(h_P+ind+6), *(h_P+ind+7));
-   //err = clEnqueueUnmapMemObject(queue, p_buffer, mapped_memory, 0, NULL, NULL);
-   printf("%lu\n", total_time);
-   printf("Preferred Vector Length: %d\n", integerVectorWidth);
-   printf("\n%.10lf seconds elapsed\n", tt);
-   printf("%lu\n", total_time);
-   printf("%.6lf seconds elapsed\n", t2-t1);
+
+   printf("\n%.6lf seconds elapsed\n", tt);
+
    if(err < 0) {
 	  perror("Couldn't unmap the buffer");
 	  exit(1);   

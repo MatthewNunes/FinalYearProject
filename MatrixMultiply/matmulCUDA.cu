@@ -42,44 +42,22 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int Width, float *d_check)
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
-  // gettimeofday(&tim, NULL);
-   cudaEventRecord(start, 0);
-   //double t1=tim.tv_sec+(tim.tv_usec/1000000.0);
+     
+     cudaEventRecord(start, 0);
+     gettimeofday(&tim, NULL);
+     double t1=tim.tv_sec+(tim.tv_usec/1000000.0);
    matMulKernel<<<dimGrid, dimBlock>>>(d_M, d_N, d_P, Width);
+   gettimeofday(&tim, NULL);
+   double t2=tim.tv_sec+(tim.tv_usec/1000000.0);
    cudaEventRecord(stop, 0);
    cudaEventSynchronize(stop);
    float elapsedTime;
-   
    cudaEventElapsedTime(&elapsedTime, start, stop);
    elapsedTime = elapsedTime / (float) 1000000;
-   //gettimeofday(&tim, NULL);
-   //double t2=tim.tv_sec+(tim.tv_usec/1000000.0);
+    //printf("%.6f seconds elapsed\n", t2-t1);
 // Step 4: Copy back result, and free memory on device
    cudaMemcpy(h_P, d_P, size, cudaMemcpyDeviceToHost);
-   int ci = 0;
-   int cj = 0;
-   int check = 1;
-   printf("First Element: %.0lf = %.0lf\n", *h_P, *d_check);
-   int count = 0;
-   for (ci = 0; ci < Width; ci++)
-   {
-       for (cj = 0; cj < Width; cj++)
-       {
-           if (*(h_P +ci * Width + cj) == *(d_check +ci * Width + cj))
-           {
-              // printf("%.6lf, %.6lf\n", *(h_P +ci * Width + cj), *(d_check +ci * Width + cj));
-           }
-           else
-           {
-               count += 1;
-               printf("%.6lf, %.6lf\n", *(h_P +ci * Width + cj), *(d_check +ci * Width + cj));
-               check = 0;
-           }
-       }
-   }
-   printf("Count: %d\n", count);
    cudaFree(d_M); cudaFree(d_N); cudaFree(d_P);
-   printf("Check: %d\n", check);
    printf("%.6f seconds elapsed\n", elapsedTime);
 }
 
