@@ -1,7 +1,7 @@
 #define PROGRAM_FILE "matMulOpenCL.cl"
 #define MAT_MUL_KERNEL "matMulKernel"
 #define BLOCK_WIDTH 16
-#define WIDTH 512
+#define WIDTH 2000
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,8 +9,16 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/time.h>
+#include <time.h>
 #include <CL/cl.h>
 
+
+long unsigned int get_tick()
+{
+   struct timespec ts;
+   if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) return (0);
+   return ts.tv_sec*(long int)1000 + ts.tv_nsec / (long int) 1000000;
+}
 
 cl_device_id create_device() {
 
@@ -176,7 +184,7 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
    err = clSetKernelArg(mult_kernel, 0, sizeof(cl_mem), &m_buffer);
    err |= clSetKernelArg(mult_kernel, 1, sizeof(cl_mem), &n_buffer);
    err |= clSetKernelArg(mult_kernel, 2, sizeof(cl_mem), &p_buffer);
-   err |= clSetKernelArg(mult_kernel, 3, sizeof(uint), &width);
+  // err |= clSetKernelArg(mult_kernel, 3, sizeof(uint), &width);
    if(err < 0) {
 	  printf("Couldn't set an argument for the transpose kernel");
 	  exit(1);   
@@ -196,8 +204,8 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
    /* Enqueue multiplication kernel */
  //  global_size[0] = ceil(width/BLOCK_WIDTH);
 //   global_size[1] = ceil(width/BLOCK_WIDTH);
-   global_size[0] = ceil(width/(float)BLOCK_WIDTH);
-   global_size[1] = ceil(width/(float)BLOCK_WIDTH);
+   global_size[0] = ceil(width/(float)BLOCK_WIDTH) * BLOCK_WIDTH;
+   global_size[1] = ceil(width/(float)BLOCK_WIDTH) * BLOCK_WIDTH;
    local_size[0] = BLOCK_WIDTH;
    local_size[1] = BLOCK_WIDTH;
    
@@ -207,13 +215,19 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
    clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max), &max, NULL);
   // gettimeofday(&tim, NULL);
    //double t1=tim.tv_sec+(tim.tv_usec/1000000.0);
+   long int start = get_tick();
    err = clEnqueueNDRangeKernel(queue, mult_kernel, 2, NULL, global_size, local_size, 0, NULL, &timing_event);
+   clFinish(queue);
+   long int end = get_tick();
+   long double elapsed_time = (end - start)/(float)1000;
+   printf("%Lf seconds elapsed\n", elapsed_time);
    if(err < 0) {
    	  printf("Err: %d\n", err);
 	  perror("Couldn't enqueue the multiplication kernel");
 	  exit(1);    
    } 
-   clFinish(queue);
+   
+   
    //gettimeofday(&tim, NULL);
    //double t2=tim.tv_sec+(tim.tv_usec/1000000.0);
    clGetEventProfilingInfo(timing_event, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL);
@@ -251,6 +265,33 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
   // return 0;
 }
 
+int checkP(float *h_P, float *h_PH, int n)
+{
+    int i;
+    int ok = 1;
+    for(i=0;i<n*n;i++){
+       float diff = fabsf((*(h_P+i))-(*(h_PH+i)))/(*(h_PH+i));
+       ok &= (diff<0.00001);
+       if(diff>=.00001) printf("%d: %f, %f\n",i,*(h_P+i),*(h_PH+i));
+    }
+    return (ok);
+}
+
+void matMul(float* M, float* N, float* P, int Width) 
+{
+    int i, j, k;
+    for (j = 0; j < Width; ++j)
+        for (i = 0; i < Width; ++i) {
+            float sum = 0;
+            for (k = 0; k < Width; ++k) {
+                float a = M[j * Width + k];
+                float b = N[k * Width + i];
+                sum += a * b;
+            }
+            P[j * Width + i] = sum;
+        }
+}
+
 int main()
 {
 	float *h_M, *h_N, *h_P;
@@ -265,5 +306,12 @@ int main()
 		*(h_N+i)=(float)i;
 	}
 	matMulDevice(h_M,h_N,h_P,n);
+   /**
+   float *h_PH = (float *)malloc(size);
+   matMul(h_M,h_N,h_PH,n);
+   int ok = checkP(h_P,h_PH,n);
+   if(ok) printf("Everything worked!\n");
+   else printf("Something went wrong!\n");
+   */
 	return 0;
 }

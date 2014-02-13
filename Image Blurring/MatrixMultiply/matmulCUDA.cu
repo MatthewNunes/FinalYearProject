@@ -66,10 +66,10 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int Width, float *d_check)
    //float elapsedTime;
    //cudaEventElapsedTime(&elapsedTime, start, stop);
    //elapsedTime = elapsedTime / (float) 1000000;
-   long double elapsed_time = (end - start)/ (float)1000;
-   printf("%Lf seconds elapsed\n", elapsed_time);
+   long int elapsed_time = (end - start)/1000;
+   printf("%ld seconds elapsed\n", elapsed_time);
 // Step 4: Copy back result, and free memory on device
-   CUDA_CHECK_RETURN(cudaMemcpy(h_P, d_P, size, cudaMemcpyDeviceToHost));
+   CUDA_CHECK_RETURN(cudaMemcpy(h_P, d_P, size, cudaMemcpyDeviceToHost);
    cudaFree(d_M); cudaFree(d_N); cudaFree(d_P);
    //printf("%.6f seconds elapsed\n", elapsedTime);
 }
