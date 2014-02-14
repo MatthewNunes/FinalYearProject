@@ -2,7 +2,7 @@
 #define MAT_MUL_KERNEL "matMulKernel"
 #define BLOCK_WIDTH 16
 #define TILE_WIDTH 16
-#define WIDTH 1504
+#define WIDTH 3000
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,8 +10,15 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/time.h>
+#include <time.h>
 #include <CL/cl.h>
 
+long unsigned int get_tick()
+{
+   struct timespec ts;
+   if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) return (0);
+   return ts.tv_sec*(long int)1000 + ts.tv_nsec / (long int) 1000000;
+}
 
 cl_device_id create_device() {
 
@@ -76,7 +83,7 @@ cl_program build_program(cl_context ctx, cl_device_id dev, const char* filename)
 
 	  /* Find size of log and print to std output */
 	  clGetProgramBuildInfo(program, dev, CL_PROGRAM_BUILD_LOG, 
-			"-cl-mad-enable", NULL, &log_size);
+			0, NULL, &log_size);
 	  program_log = (char*) malloc(log_size + 1);
 	  program_log[log_size] = '\0';
 	  clGetProgramBuildInfo(program, dev, CL_PROGRAM_BUILD_LOG, 
@@ -209,13 +216,18 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
    size_t local_test = 8;
    size_t max;
    clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max), &max, NULL);
+   long int start = get_tick();
    err = clEnqueueNDRangeKernel(queue, mult_kernel, 2, NULL, global_size, local_size, 0, NULL, &timing_event);
+   clFinish(queue);
+   long int end = get_tick();
+   long double elapsedTime = (end - start)/ (float) 1000;
    if(err < 0) {
 	  printf("Err: %d\n", err);
 	  perror("Couldn't enqueue the multiplication kernel");
 	  exit(1);    
    } 
-   clFinish(queue);
+   printf("%Lf seconds have elapsed\n", elapsedTime);
+   
    clGetEventProfilingInfo(timing_event, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL);
    clGetEventProfilingInfo(timing_event, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL);
    total_time = time_end - time_start;
@@ -230,7 +242,7 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
 	  exit(1);   
    } 
 
-   printf("\n%.6lf seconds elapsed\n", tt);
+ //  printf("\n%.6lf seconds elapsed\n", tt);
    //err = clEnqueueUnmapMemObject(queue, p_buffer, mapped_memory, 0, NULL, NULL);
    
    if(err < 0) {

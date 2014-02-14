@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cuda.h>
-#define WIDTH 1504
+#define WIDTH 3000
 #define BLOCK_WIDTH 16
 #define TILE_WIDTH 16
 #include <sys/types.h>
 #include <sys/time.h>
+#include <time.h>
+
 __global__ 
 void matMulTiledKernel(float *d_M, float *d_N, float *d_P, int Width)
 { 
@@ -27,9 +29,16 @@ void matMulTiledKernel(float *d_M, float *d_N, float *d_P, int Width)
      d_P[Row*Width+Col] = Pvalue;
 }
 
+long unsigned int get_tick()
+{
+    struct timespec ts;
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) return (0);
+    return ts.tv_sec*(long int)1000 + ts.tv_nsec / (long int) 1000000;
+}
+
 void matMulDevice(float *h_M, float *h_N, float *h_P, int Width)
 {
-    struct timeval tim;
+   // struct timeval tim;
     int size = Width * Width * sizeof(float); 
     float *d_M, *d_N, *d_P;
 // Step 1: Allocate and Load M, N to device memory 
@@ -44,19 +53,24 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int Width)
    dim3 dimGrid(numBlocks,numBlocks);
    dim3 dimBlock(BLOCK_WIDTH, BLOCK_WIDTH);
 // Step 3b: Launch the device computation threads!
-   cudaEvent_t start, stop;
-   cudaEventCreate(&start);
-   cudaEventCreate(&stop);
-   cudaEventRecord(start, 0);
+   //cudaEvent_t start, stop;
+   //cudaEventCreate(&start);
+   //cudaEventCreate(&stop);
+   //cudaEventRecord(start, 0);
+   long int start = get_tick();
    matMulTiledKernel<<<dimGrid, dimBlock>>>(d_M, d_N, d_P, Width);
-   cudaEventRecord(stop, 0);
-   cudaEventSynchronize(stop);
-   float elapsedTime;
-   cudaEventElapsedTime(&elapsedTime, start, stop);
-   elapsedTime = elapsedTime / (float) 1000000;
+   cudaDeviceSynchronize();
+   long int end = get_tick();
+   long double elapsedTime = (end - start) / (float) 1000;
+   printf("%Lf seconds elapsed\n", elapsedTime);
+   //cudaEventRecord(stop, 0);
+   //cudaEventSynchronize(stop);
+   //float elapsedTime;
+   //cudaEventElapsedTime(&elapsedTime, start, stop);
+   //elapsedTime = elapsedTime / (float) 1000000;
 // Step 4: Copy back result, and free memory on device
    cudaMemcpy(h_P, d_P, size, cudaMemcpyDeviceToHost);
-   printf("%.6f seconds elapsed\n", elapsedTime);
+   //printf("%.6Lf seconds elapsed\n", elapsedTime);
    cudaFree(d_M); cudaFree(d_N); cudaFree(d_P);
 }
 

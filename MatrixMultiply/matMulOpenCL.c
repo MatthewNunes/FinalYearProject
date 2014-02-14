@@ -1,7 +1,7 @@
 #define PROGRAM_FILE "matMulOpenCL.cl"
 #define MAT_MUL_KERNEL "matMulKernel"
 #define BLOCK_WIDTH 16
-#define WIDTH 2000
+#define WIDTH 3000
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -255,7 +255,7 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
    }
 
    /* Deallocate resources */
-   printf("Time Taken: %.6lf\n", tt);
+   //printf("Time Taken: %.6lf\n", tt);
    clReleaseMemObject(m_buffer);
    clReleaseMemObject(n_buffer);
    clReleaseKernel(mult_kernel);

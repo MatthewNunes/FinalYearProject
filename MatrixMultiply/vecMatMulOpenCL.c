@@ -9,7 +9,15 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/time.h>
+#include <time.h>
 #include <CL/cl.h>
+
+long unsigned int get_tick()
+{
+   struct timespec ts;
+   if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) return (0);
+   return ts.tv_sec*(long int)1000 + ts.tv_nsec / (long int) 1000000;
+}
 
 /* Find a GPU or CPU associated with the first available platform */
 cl_device_id create_device() {
@@ -195,13 +203,18 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
    size_t max;
    clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max), &max, NULL);
    printf("Max: %d\n", max);
+   long int start = get_tick();
    err = clEnqueueNDRangeKernel(queue, mult_kernel, 1, NULL, &global_size, NULL, 0, NULL, &timing_event);
+   clFinish(queue);
+   long int end = get_tick();
+   long double elapsedTime = (end - start) / (float) 1000;
    if(err < 0) {
 	  printf("Err: %d\n", err);
 	  perror("Couldn't enqueue the multiplication kernel");
 	  exit(1);    
-   } 
-   clFinish(queue);
+   }
+   printf("%Lf seconds elapsed\n", elapsedTime); 
+   
    /* Read output buffer */
    //memcpy(h_P, mapped_memory, sizeof(float) * width * width); 
    clGetEventProfilingInfo(timing_event, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL);
@@ -217,7 +230,7 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int width)
    } 
    /* Unmap memory */ 
 
-   printf("\n%.6lf seconds elapsed\n", tt);
+   //printf("\n%.6lf seconds elapsed\n", tt);
 
    if(err < 0) {
 	  perror("Couldn't unmap the buffer");

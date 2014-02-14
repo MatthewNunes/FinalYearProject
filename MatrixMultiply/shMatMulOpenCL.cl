@@ -1,5 +1,5 @@
 #define TILE_WIDTH 16
-#define WIDTH 512
+#define WIDTH 3000
 
 __kernel void matMulKernel(__global float *restrict d_M, __global float *restrict d_N, __global float *restrict d_P)
 {

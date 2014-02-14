@@ -3,24 +3,25 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <cuda.h>
+#include <time.h>
 #include "matthew_CUDA.h"
 
-#define WIDTH 2000
+#define WIDTH 3000
 #define BLOCK_WIDTH 16
 
 __global__ 
-void matMulKernel(float *d_M, float *d_N, float *d_P, int Width)
+void matMulKernel(float *d_M, float *d_N, float *d_P)
 { 
     int Row = blockIdx.y*blockDim.y + threadIdx.y;
     int Col = blockIdx.x*blockDim.x + threadIdx.x;
     int k;
-    if ((Row<Width)&&(Col<Width)){
+    if ((Row<WIDTH)&&(Col<WIDTH)){
         float Pvalue = 0.0;
-        for(k=0;k<Width;k++)
+        for(k=0;k<WIDTH;k++)
         {
-            Pvalue += d_M[Row*Width+k]*d_N[k*Width+Col];
+            Pvalue += d_M[Row*WIDTH+k]*d_N[k*WIDTH+Col];
         }
-        d_P[Row*Width+Col] = Pvalue;
+        d_P[Row*WIDTH+Col] = Pvalue;
     }
 }
 
@@ -33,7 +34,7 @@ long unsigned int get_tick()
 
 void matMulDevice(float *h_M, float *h_N, float *h_P, int Width, float *d_check)
 {
-    struct timeval tim;
+   // struct timeval tim;
     int size = Width * Width * sizeof(float); 
     float *d_M, *d_N, *d_P;
 // Step 1: Allocate and Load M, N to device memory 
@@ -56,7 +57,7 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int Width, float *d_check)
    //  gettimeofday(&tim, NULL);
   //   double t1=tim.tv_sec+(tim.tv_usec/1000000.0);
    long int start = get_tick();
-   matMulKernel<<<dimGrid, dimBlock>>>(d_M, d_N, d_P, Width);
+   matMulKernel<<<dimGrid, dimBlock>>>(d_M, d_N, d_P);
    cudaDeviceSynchronize();
    long int end = get_tick();
   // gettimeofday(&tim, NULL);
