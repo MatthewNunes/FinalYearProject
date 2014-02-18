@@ -153,7 +153,7 @@ void decodeOneStep(const char* filename)
   int *B= (int *)malloc(sizeof(int) * height * width);
   int it = 0;
 
-  unsigned char *newImage = malloc(sizeof(unsigned char) * width * height * 3);
+  unsigned char *newImage = (unsigned char *)malloc(sizeof(unsigned char) * width * height * 3);
  
   //printf("I get here 3");
   int  maxlen = width;
@@ -165,9 +165,31 @@ void decodeOneStep(const char* filename)
   int total = width * height;
   int totalReached =0;
   int i =0, j=0;
+  int nblurs;
 
   printf("Width: %d\n", width);
   printf("Height: %d\n", height);
+
+  char *first = (char *)malloc(sizeof(char));
+  char *second = (char *)malloc(sizeof(char));
+  char *third = (char *)malloc(sizeof(char));
+  char *firstPointer = first;
+  char *secondPointer = second;
+  char *thirdPointer = third;
+  for(i=0,j=0;i<3*width*height;i+=3,j++)
+  {
+    sprintf(first, "%02x", *(image + i));
+    sprintf(second, "%02x", *(image + i+1));
+    sprintf(third, "%02x", *(image + i+2));
+    *(R+j) = strtol(first, NULL, 16);
+    *(G+j) = strtol(second, NULL, 16);
+    *(B+j) = strtol(third, NULL, 16);
+    first = firstPointer;
+    second = secondPointer;
+    third = thirdPointer;
+   }
+  
+  
 ///ADD IT HERE
   int size = rowsize * colsize; 
   int *d_R;
@@ -196,6 +218,7 @@ void decodeOneStep(const char* filename)
   cudaMemcpy(d_B, B, size*sizeof(int), cudaMemcpyHostToDevice);
   dim3 dimGrid(ceil(colsize/(float)TX),ceil(rowsize/(float)TY),1);
   dim3 dimBlock(TX,TY,1);
+  int k;
   for(k=0;k<nblurs;k++){
     performUpdatesKernel<<<dimGrid,dimBlock>>>(d_R, d_G, d_B, d_Rnew, d_Gnew, d_Bnew, rowsize, colsize);
     doCopyKernel<<<dimGrid, dimBlock>>>(d_R, d_G, d_B, d_Rnew, d_Gnew, d_Bnew, rowsize, colsize);
@@ -225,29 +248,12 @@ void decodeOneStep(const char* filename)
   }
 
 //ENDS HERE
-  char *first = malloc(sizeof(char));
-  char *second = malloc(sizeof(char));
-  char *third = malloc(sizeof(char));
-  char *firstPointer = first;
-  char *secondPointer = second;
-  char *thirdPointer = third;
-  for(i=0,j=0;i<3*width*height;i+=3,j++)
-  {
-    sprintf(first, "%02x", *(image + i));
-    sprintf(second, "%02x", *(image + i+1));
-    sprintf(third, "%02x", *(image + i+2));
-    *(R+j) = strtol(first, NULL, 16);
-    *(G+j) = strtol(second, NULL, 16);
-    *(B+j) = strtol(third, NULL, 16);
-    first = firstPointer;
-    second = secondPointer;
-    third = thirdPointer;
-   }
+
    
   unsigned char *newImage2 = newImage;
   int lineno =0, linelen=200;
   printf("I get here\n");
-  char *convertMe = malloc(sizeof(char) * 1);
+  char *convertMe = (char *)malloc(sizeof(char) * 1);
   char *convertMePointer = convertMe;
 	for(row=0;row<rowsize;row++){
     for (col=0;col<colsize;col++){
