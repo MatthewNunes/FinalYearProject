@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <CL/cl.h>
+#include <time.h>
 #define NSTEPS 500
 #define TX 16
 #define TY 32
@@ -11,6 +12,12 @@
 #define COPY_KERNEL "doCopyKernel"
 #define PROGRAM_FILE "laplaceOpenCL.cl"
 
+long unsigned int get_tick()
+{
+	struct timespec ts;
+	if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) return (0);
+	return ts.tv_sec*(long int)1000 + ts.tv_nsec / (long int) 1000000;
+}
 
 cl_device_id create_device() {
 
@@ -170,36 +177,18 @@ void performUpdates(float *h_phi, float * h_oldphi, int *h_mask, int nptsx, int 
 	global_size[1] = ceil(nptsy/TY) * TY;
 	local_size[0] = TX;
 	local_size[1] = TY;
+	long int start = get_tick();
 	for(k=0;k<nsteps;++k){
-		err = clEnqueueNDRangeKernel(queue, updates_kernel, 2, NULL, global_size, local_size, 0, NULL, &timing_event);
-		printf("CL_INVALID_PROGRAM_EXECUTABLE: %d\n", CL_INVALID_PROGRAM_EXECUTABLE);
-		printf("CL_INVALID_COMMAND_QUEUE: %d\n", CL_INVALID_COMMAND_QUEUE);
-		printf("CL_INVALID_KERNEL: %d\n", CL_INVALID_KERNEL);
-		printf("CL_INVALID_CONTEXT: %d\n", CL_INVALID_CONTEXT);
-		printf("CL_INVALID_KERNEL_ARGS: %d\n", CL_INVALID_KERNEL_ARGS);
-		printf("CL_INVALID_WORK_DIMENSION: %d\n", CL_INVALID_WORK_DIMENSION);
-		printf("CL_INVALID_WORK_GROUP_SIZE: %d\n", CL_INVALID_WORK_GROUP_SIZE);
-		printf("CL_INVALID_WORK_ITEM_SIZE: %d\n", CL_INVALID_WORK_ITEM_SIZE);
-		printf("CL_INVALID_GLOBAL_OFFSET: %d\n", CL_INVALID_GLOBAL_OFFSET);
-		printf("CL_OUT_OF_RESOURCES: %d\n", CL_OUT_OF_RESOURCES);
-		printf("CL_MEM_OBJECT_ALLOCATION_FAILURE: %d\n", CL_MEM_OBJECT_ALLOCATION_FAILURE);
-		printf("CL_INVALID_EVENT_WAIT_LIST: %d\n", CL_INVALID_EVENT_WAIT_LIST);
-		printf("CL_OUT_OF_HOST_MEMORY: %d\n", CL_OUT_OF_HOST_MEMORY);   		
-		if(err < 0) {
-	  		printf("Err: %d\n", err);
-	  		perror("Couldn't enqueue the updates kernel");
-	  		exit(1);    
-   		} 
-   		clFinish(queue);
+		err = clEnqueueNDRangeKernel(queue, updates_kernel, 2, NULL, global_size, local_size, 0, NULL, &timing_event); 		
+
 		
 		err = clEnqueueNDRangeKernel(queue, copy_kernel, 2, NULL, global_size, local_size, 0, NULL, &timing_event);
-		if(err < 0) {
-			printf("Err: %d\n", err);
-			perror("Couldn't enqueue the copy kernel");
-			exit(1);    
-		}
-		clFinish(queue);
+
 	} 
+	clFinish(queue);
+	long int end = get_tick();
+	long double elapsedTime = (end - start)/ (float) 1000;
+	printf("%Lf seconds elapsed\n", elapsedTime);
 	err = clEnqueueReadBuffer(queue, oldphi_buffer, CL_TRUE, 0, sizeof(float)*nptsx*nptsy, h_phi, 0, NULL, NULL);
    	if(err < 0) 
 	{
@@ -293,7 +282,7 @@ int main (int argc, char *argv[])
    setup_grid (h_oldphi, NPTSX, NPTSY, h_mask);
    performUpdates(h_phi,h_oldphi,h_mask,NPTSX,NPTSY,NSTEPS);
  
-   output_array (h_phi, NPTSX, NPTSY);
+   //output_array (h_phi, NPTSX, NPTSY);
  
    return 0;
 }

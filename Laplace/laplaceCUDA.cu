@@ -2,11 +2,12 @@
 #include <stdlib.h>
 #include <math.h>
 #include <cuda.h>
+#include <time.h>
 #define NSTEPS 500
 #define TX 16
 #define TY 32
-#define NPTSX 200
-#define NPTSY 200
+#define NPTSX 300
+#define NPTSY 300
 
 __global__ 
 void performUpdatesKernel(float *d_phi, float *d_oldphi, int *d_mask, int nptsx, int nptsy)
@@ -31,6 +32,14 @@ void doCopyKernel(float *d_phi, float *d_oldphi, int *d_mask, int nptsx, int npt
         if (d_mask[x]) d_oldphi[x] = d_phi[x];
 }
 
+long unsigned int get_tick()
+{
+    struct timespec ts;
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) return (0);
+    return ts.tv_sec*(long int)1000 + ts.tv_nsec / (long int) 1000000;
+}
+
+
 void performUpdates(float *h_phi, float * h_oldphi, int *h_mask, int nptsx, int nptsy, int nsteps)
 {
     float *d_phi, *d_oldphi;
@@ -45,10 +54,15 @@ void performUpdates(float *h_phi, float * h_oldphi, int *h_mask, int nptsx, int 
     cudaMemcpy(d_mask,h_mask,sizei,cudaMemcpyHostToDevice);
     dim3 dimGrid(ceil(nptsx/(float)TX),ceil(nptsy/(float)TY),1);
     dim3 dimBlock(TX,TY,1);
+    long int start = get_tick();
     for(k=0;k<nsteps;++k){
         performUpdatesKernel<<<dimGrid,dimBlock>>>(d_phi,d_oldphi,d_mask,nptsx,nptsy);
         doCopyKernel<<<dimGrid,dimBlock>>>(d_phi,d_oldphi,d_mask,nptsx,nptsy);
     } 
+    cudaDeviceSynchronize();
+    long int end = get_tick();
+    long double elapsedTime = (end - start)/ (float) 1000;
+    printf("%Lf seconds elapsed\n", elapsedTime);
     cudaMemcpy(h_phi,d_oldphi,sizef,cudaMemcpyDeviceToHost);
     cudaFree(d_phi); cudaFree(d_oldphi); cudaFree(d_mask);
 }
@@ -136,7 +150,7 @@ int main (int argc, char *argv[])
    setup_grid (h_oldphi, NPTSX, NPTSY, h_mask);
    performUpdates(h_phi,h_oldphi,h_mask,NPTSX,NPTSY,NSTEPS);
  
-   output_array (h_phi, NPTSX, NPTSY);
+   //output_array (h_phi, NPTSX, NPTSY);
  
    return 0;
 }
