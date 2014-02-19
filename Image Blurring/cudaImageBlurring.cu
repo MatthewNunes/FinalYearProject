@@ -10,7 +10,7 @@
 #define ROWSIZE 521
 #define COLSIZE 428
 #define TX 16
-#define TY 32
+#define TY 16
 
 int *h_R;
 int *h_G; 
@@ -129,16 +129,9 @@ void blurImage(const char* filename)
 //  int it = 0;
 
   unsigned char *newImage = (unsigned char *)malloc(sizeof(unsigned char) * width * height * 3);
- 
-  //printf("I get here 3");
- // int  maxlen = width;
-  //char str[maxlen], lines[height][maxlen];
- // unsigned int h1, h2, h3;
- // unsigned char *sptr;
+  
   int row = 0; 
   int col = 0;
-//  int total = width * height;
-//  int totalReached =0;
   int i =0, j=0;
   int nblurs;
 
@@ -250,10 +243,7 @@ void blurImage(const char* filename)
 	  }
 	
   }
-  //printf("I get here 2\n");
 
-  //size_t pngsize = width * height * 3;
-  //printf("I get here 3\n");
   unsigned error2 = lodepng_encode24_file("file.png",newImage, width, height);
   //printf("I get here 4\n");
   //printf("I get here 5\n");
