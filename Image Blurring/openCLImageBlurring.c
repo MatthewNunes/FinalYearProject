@@ -310,7 +310,7 @@ void blurImage(const char * filename)
 
 int main (int argc, char *argv[])
 {
-  blurImage("Laplace.png");
+  blurImage("sixth.png");
   
   return 0;
 }

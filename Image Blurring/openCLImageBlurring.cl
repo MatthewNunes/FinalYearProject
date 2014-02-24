@@ -1,4 +1,4 @@
-__kernel void performUpdatesKernel(__global int *restrict d_R, __global int *restrict d_G, __global int *restrict d_B, __global int *restrict d_Rnew, __global int *restrict d_Bnew, __global int *restrict d_Gnew, __private int rowsize, __private int colsize)
+__kernel void performUpdatesKernel(__global int *restrict d_R, __global int *restrict d_G, __global int *restrict d_B, __global int *restrict d_Rnew, __global int *restrict d_Gnew, __global int *restrict d_Bnew, __private int rowsize, __private int colsize)
 {
 	__private int row = get_global_id(1);
 	__private int col = get_global_id(0);
@@ -57,7 +57,7 @@ __kernel void performUpdatesKernel(__global int *restrict d_R, __global int *res
 	 
 }
 
-__kernel void doCopyKernel( __global int *restrict d_R, __global int *restrict d_G, __global int *restrict d_B, __global int *restrict d_Rnew, __global int *restrict d_Bnew, __global int *restrict d_Gnew, __private int rowsize, __private int colsize)
+__kernel void doCopyKernel( __global int *restrict d_R, __global int *restrict d_G, __global int *restrict d_B, __global int *restrict d_Rnew, __global int *restrict d_Gnew, __global int *restrict d_Bnew, __private int rowsize, __private int colsize)
 {
 
 	__private int row = get_global_id(1);

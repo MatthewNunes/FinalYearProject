@@ -20,7 +20,7 @@ int *h_Gnew;
 int *h_Bnew;
 
 __global__
-void performUpdatesKernel(int *d_R, int *d_G, int *d_B, int *d_Rnew, int *d_Bnew, int *d_Gnew, int rowsize, int colsize)
+void performUpdatesKernel(int *d_R, int *d_G, int *d_B, int *d_Rnew, int *d_Gnew, int *d_Bnew, int rowsize, int colsize)
 {
 	int row = blockIdx.y*blockDim.y+threadIdx.y;
 	int col = blockIdx.x*blockDim.x+threadIdx.x;
@@ -80,7 +80,7 @@ void performUpdatesKernel(int *d_R, int *d_G, int *d_B, int *d_Rnew, int *d_Bnew
 }
 
 __global__
-void doCopyKernel(int *d_R, int *d_G, int *d_B, int *d_Rnew, int *d_Bnew, int *d_Gnew, int rowsize, int colsize)
+void doCopyKernel(int *d_R, int *d_G, int *d_B, int *d_Rnew, int *d_Gnew, int *d_Bnew, int rowsize, int colsize)
 {
 
 	int row = blockIdx.y*blockDim.y+threadIdx.y;
@@ -130,8 +130,8 @@ void blurImage(const char* filename)
 
   unsigned char *newImage = (unsigned char *)malloc(sizeof(unsigned char) * width * height * 3);
   
-  int row = 0; 
-  int col = 0;
+  //int row = 0; 
+  //int col = 0;
   int i =0, j=0;
   int nblurs;
 
@@ -146,9 +146,9 @@ void blurImage(const char* filename)
   char *thirdPointer = third;
   for(i=0,j=0;i<3*width*height;i+=3,j++)
   {
-	sprintf(first, "%02x", *(image + i));
-	sprintf(second, "%02x", *(image + i+1));
-	sprintf(third, "%02x", *(image + i+2));
+	sprintf(first, "%2x", *(image + i));
+	sprintf(second, "%2x", *(image + i+1));
+	sprintf(third, "%2x", *(image + i+2));
 	*(R+j) = strtol(first, NULL, 16);
 	*(G+j) = strtol(second, NULL, 16);
 	*(B+j) = strtol(third, NULL, 16);
@@ -222,27 +222,33 @@ void blurImage(const char* filename)
 //ENDS HERE
 
    
-  unsigned char *newImage2 = newImage;
+  //unsigned char *newImage2 = newImage;
 //  int lineno =0, linelen=200;
  // printf("I get here\n");
-  char *convertMe = (char *)malloc(sizeof(char) * 1);
-  char *convertMePointer = convertMe;
-	for(row=0;row<rowsize;row++){
-	for (col=0;col<colsize;col++){
-	  sprintf(convertMe  ,"%02x",*(R+ (row * colsize) + col));
-	  *newImage2 = strtol(convertMe, NULL, 16);
-	  convertMe = convertMePointer;
-	  newImage2+=1;
-	  sprintf(convertMe, "%02x", *(G + (row * colsize) + col));
-	  *newImage2 = strtol(convertMe, NULL, 16);
-	  convertMe = convertMePointer;
-	  newImage2+=1;
-	  sprintf(convertMe, "%02x", *(B + (row * colsize) + col));
-	  *newImage2 = strtol(convertMe, NULL, 16);
-	  newImage2+=1;
-	  }
-	
-  }
+  char *convertMeR = (char *)malloc(sizeof(char) * 1);
+  //char *convertMePointerR = convertMeR;
+    char *convertMeG = (char *)malloc(sizeof(char) * 1);
+  //char *convertMePointerG = convertMeG;
+    char *convertMeB = (char *)malloc(sizeof(char) * 1);
+  //char *convertMePointerB = convertMeB;
+	for(i=0,j=0;i<3*width*height;i+=3,j++)
+  {
+    sprintf(convertMeR  ,"%02x",*(R+ j));
+	  sprintf(convertMeG, "%02x", *(G + j));
+    sprintf(convertMeB, "%02x", *(B + j));
+    *(newImage + i) = strtol(convertMeR, NULL, 16);
+    *(newImage + i + 1) = strtol(convertMeG, NULL, 16);
+    *(newImage + i + 2) = strtol(convertMeB, NULL, 16);
+	  //convertMe = convertMePointer;
+	  //newImage2+=1;
+	  
+	  //*newImage2 = strtol(convertMe, NULL, 16);
+	  //convertMe = convertMePointer;
+	 // newImage2+=1;
+	  
+	 // *newImage2 = strtol(convertMe, NULL, 16);
+	 // newImage2+=1;
+	}
 
   unsigned error2 = lodepng_encode24_file("file.png",newImage, width, height);
   //printf("I get here 4\n");
@@ -261,7 +267,7 @@ int main(int argc, char *argv[])
 {
   //const char* filename = argc > 1 ? argv[1] : "Laplace.png";
 
-  blurImage("Laplace.png");
+  blurImage("sixth.png");
   
   return 0;
 }
