@@ -24,7 +24,7 @@ HIS   5) Converted from Fortran to C in November 1997.
 #include <math.h>
 #include "moldyn.h"
 
-#define BLOCK_WIDTH 16
+#define BLOCK_WIDTH 512
 
 
 
@@ -48,8 +48,7 @@ int main ( int argc, char *argv[])
    ierror = input_parameters (&sigma, &rcut, &dt, &eqtemp, &dens, &boxlx, &boxly, &boxlz, &sfx, &sfy, &sfz, &sr6, &vrcut, &dvrcut, &dvrc12, &freex, &nstep, &nequil, &iscale, &nc, &natoms, &mx, &my, &mz, &iprint);
    //printf ("\nReturned from input_parameters, natoms = %d\n", natoms);
    //float virialArray[natoms], potentialArray[natoms];
-   virialArray = (float *)malloc(natoms * sizeof(float));
-   potentialArray = (float *)malloc(natoms * sizeof(float));
+
    rx = (float *)malloc(2*natoms*sizeof(float));
    ry = (float *)malloc(2*natoms*sizeof(float));
    rz = (float *)malloc(2*natoms*sizeof(float));
@@ -62,12 +61,17 @@ int main ( int argc, char *argv[])
    virialPointer = (float *)malloc(sizeof(float));
    potentialPointer = (float *)malloc(sizeof(float));
    int index = 0;
-   for (index = 0; index < natoms; index++)
+   /**
+
+   */
+   int numBlocks = ceil(natoms/(float)BLOCK_WIDTH);
+   virialArray = (float *)malloc( numBlocks* sizeof(float));
+   potentialArray = (float *)malloc(numBlocks * sizeof(float));
+   for (index = 0; index < numBlocks; index++)
    {
       virialArray[index] = (float)0;
       potentialArray[index] = (float)0;
    }
-   
    cudaMalloc((void **) &d_rx, 2*natoms*sizeof(float));
    cudaMalloc((void **) &d_ry, 2*natoms*sizeof(float));
    cudaMalloc((void **) &d_rz, 2*natoms*sizeof(float));
@@ -78,8 +82,8 @@ int main ( int argc, char *argv[])
    cudaMalloc((void **) &d_list, NMAX*sizeof(int));
    cudaMalloc((void **) &d_potential, sizeof(float));
    cudaMalloc((void **) &d_virial, sizeof(float));
-   cudaMalloc((void **) &d_virialArray, sizeof(float) * natoms);
-   cudaMalloc((void **) &d_potentialArray, sizeof(float) * natoms);
+   cudaMalloc((void **) &d_virialArray, sizeof(float) * (numBlocks + 1));
+   cudaMalloc((void **) &d_potentialArray, sizeof(float) * (numBlocks + 1));
    
 
    initialise_particles (rx, ry, rz, vx, vy, vz, nc);
@@ -103,22 +107,26 @@ int main ( int argc, char *argv[])
       cudaMemcpy(d_fz, fz, natoms*sizeof(float), cudaMemcpyHostToDevice);
       cudaMemcpy(d_head, head, NCELL*sizeof(int), cudaMemcpyHostToDevice);
       cudaMemcpy(d_list, list, NMAX*sizeof(int), cudaMemcpyHostToDevice);
-      cudaMemcpy(d_potential, potentialPointer, sizeof(int), cudaMemcpyHostToDevice);
-      cudaMemcpy(d_virial, virialPointer, sizeof(int), cudaMemcpyHostToDevice);
-      cudaMemcpy(d_virialArray, virialArray, sizeof(float) * natoms, cudaMemcpyHostToDevice);
-      cudaMemcpy(d_potentialArray, potentialArray, sizeof(float) * natoms, cudaMemcpyHostToDevice);
-      int numBlocks = ceil(natoms/(float)BLOCK_WIDTH);
-      force<<<numBlocks, BLOCK_WIDTH>>>(d_virialArray, d_potentialArray, d_potential, d_virial, d_rx, d_ry, d_rz, d_fx, d_fy, d_fz, sigma, rcut, vrcut, dvrc12, dvrcut, d_head, d_list, mx, my, mz, natoms,0, sfx, sfy, sfz);
+      cudaMemcpy(d_potential, potentialPointer, sizeof(float), cudaMemcpyHostToDevice);
+      cudaMemcpy(d_virial, virialPointer, sizeof(float), cudaMemcpyHostToDevice);
+      cudaMemcpy(d_virialArray, virialArray, sizeof(float) * numBlocks, cudaMemcpyHostToDevice);
+      cudaMemcpy(d_potentialArray, potentialArray, sizeof(float) * numBlocks, cudaMemcpyHostToDevice);
+      //float *virialTest = (float *)malloc(sizeof(float) * numBlocks);
+      //float *potentialTest = (float *)malloc(sizeof(float) * numBlocks);
+      force<<<numBlocks, BLOCK_WIDTH, 2* BLOCK_WIDTH * sizeof(float)>>>(d_virialArray, d_potentialArray, d_potential, d_virial, d_rx, d_ry, d_rz, d_fx, d_fy, d_fz, sigma, rcut, vrcut, dvrc12, dvrcut, d_head, d_list, mx, my, mz, natoms,0, sfx, sfy, sfz);
    //
       cudaMemcpy(fx, d_fx, natoms*sizeof(float), cudaMemcpyDeviceToHost);
       cudaMemcpy(fy, d_fy, natoms*sizeof(float), cudaMemcpyDeviceToHost);
       cudaMemcpy(fz, d_fz, natoms*sizeof(float), cudaMemcpyDeviceToHost);
-    //  cudaMemcpy(virialArray, d_virialArray)
-      
+      //cudaMemcpy(virialTest, d_virialArray, sizeof(float) * numBlocks, cudaMemcpyDeviceToHost);
+      //cudaMemcpy(potentialTest, d_potentialArray, sizeof(float) * numBlocks, cudaMemcpyDeviceToHost);
+      //cudaMemcpy(virialArray, d_virialArray);
+      finalResult<<<1,numBlocks,2* numBlocks * sizeof(float)>>>(d_potentialArray, d_virialArray, d_potential, d_virial, numBlocks);
       cudaMemcpy(potentialPointer, d_potential, sizeof(float), cudaMemcpyDeviceToHost);
       cudaMemcpy(virialPointer, d_virial, sizeof(float), cudaMemcpyDeviceToHost);
       virial = *virialPointer;
       potential = *potentialPointer;
+      
       //printf ("\nReturned from force: potential = %f, virial = %f, kinetic = %f\n",potential, virial, kinetic);
       output_particles(rx,ry,rz,vx,vy,vz,fx,fy,fz,0);
 
@@ -137,22 +145,29 @@ int main ( int argc, char *argv[])
       cudaMemcpy(d_fx, fx, natoms*sizeof(float), cudaMemcpyHostToDevice);
       cudaMemcpy(d_fy, fy, natoms*sizeof(float), cudaMemcpyHostToDevice);
       cudaMemcpy(d_fz, fz, natoms*sizeof(float), cudaMemcpyHostToDevice);
-      cudaMemcpy(d_head, head, NCELL*sizeof(int), cudaMemcpyHostToDevice);
-      cudaMemcpy(d_list, list, NMAX*sizeof(int), cudaMemcpyHostToDevice);
+      cudaMemcpy(d_head, head, NCELL*sizeof(float), cudaMemcpyHostToDevice);
+      cudaMemcpy(d_list, list, NMAX*sizeof(float), cudaMemcpyHostToDevice);
       cudaMemcpy(d_potential, potentialPointer, sizeof(int), cudaMemcpyHostToDevice);
       cudaMemcpy(d_virial, virialPointer, sizeof(int), cudaMemcpyHostToDevice);
-      cudaMemcpy(d_virialArray, virialArray, sizeof(float) * natoms, cudaMemcpyHostToDevice);
-      cudaMemcpy(d_potentialArray, potentialArray, sizeof(float) * natoms, cudaMemcpyHostToDevice);
-      int numBlocks = ceil(natoms/(float)BLOCK_WIDTH);
-      force<<<numBlocks, BLOCK_WIDTH>>>(d_virialArray, d_potentialArray, d_potential, d_virial, d_rx, d_ry, d_rz, d_fx, d_fy, d_fz, sigma, rcut, vrcut, dvrc12, dvrcut, d_head, d_list, mx, my, mz, natoms,0, sfx, sfy, sfz);
+      cudaMemcpy(d_virialArray, virialArray, sizeof(float) * numBlocks, cudaMemcpyHostToDevice);
+      cudaMemcpy(d_potentialArray, potentialArray, sizeof(float) * numBlocks, cudaMemcpyHostToDevice);
+      //int numBlocks = ceil(natoms/(float)BLOCK_WIDTH);
+      force<<<numBlocks, BLOCK_WIDTH, 2*BLOCK_WIDTH * sizeof(float)>>>(d_virialArray, d_potentialArray, d_potential, d_virial, d_rx, d_ry, d_rz, d_fx, d_fy, d_fz, sigma, rcut, vrcut, dvrc12, dvrcut, d_head, d_list, mx, my, mz, natoms,0, sfx, sfy, sfz);
    //
       cudaMemcpy(fx, d_fx, natoms*sizeof(float), cudaMemcpyDeviceToHost);
       cudaMemcpy(fy, d_fy, natoms*sizeof(float), cudaMemcpyDeviceToHost);
       cudaMemcpy(fz, d_fz, natoms*sizeof(float), cudaMemcpyDeviceToHost);
+      //cudaMemcpy(virialTest, d_virialArray, sizeof(float) * numBlocks, cudaMemcpyDeviceToHost);
+      //cudaMemcpy(potentialTest, d_potentialArray, sizeof(float) * numBlocks, cudaMemcpyDeviceToHost);
+     
+      finalResult<<<1, numBlocks, 2*numBlocks * sizeof(float)>>>(d_potentialArray, d_virialArray, d_potential, d_virial, numBlocks);
       cudaMemcpy(potentialPointer, d_potential, sizeof(float), cudaMemcpyDeviceToHost);
       cudaMemcpy(virialPointer, d_virial, sizeof(float), cudaMemcpyDeviceToHost);
       virial = *virialPointer;
       potential = *potentialPointer;
+      
+      //potential = potentialTest[0];
+      //virial = virialTest[0];
       //printf ("\nReturned from force: potential = %f, virial = %f, kinetic = %f\n",potential, virial, kinetic);      
       moveb (&kinetic, vx, vy, vz, fx, fy, fz, dt, natoms);
  //     check_cells(rx, ry, rz, head, list, mx, my, mz, natoms,step,step);
