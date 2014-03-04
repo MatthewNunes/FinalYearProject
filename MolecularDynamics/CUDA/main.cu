@@ -42,6 +42,7 @@ int main ( int argc, char *argv[])
    int jstart, step, itemp;
    float potential, virial, kinetic;
    float tmpx;
+   int err;
    int i, icell;
    
 
