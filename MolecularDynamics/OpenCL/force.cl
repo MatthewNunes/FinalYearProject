@@ -1,5 +1,5 @@
-#define BLOCK_SIZE 512
-__kernel void force (__local float vpArray[], __global float *virialArray, __global float *potentialArray, __global float *pval, __global float *vval, __global float *rx, __global float *ry, __global float *rz, __global float *fx, __global float *fy, __global float *fz, __private float sigma, __private float rcut, __private float vrcut, __private float dvrc12, __private float dvrcut, __global int *head, __global int *list, __private int mx, __private int my, __private int mz, __private int natoms, __private int step, __private float sfx, __private float sfy, __private float sfz)
+#define BLOCK_WIDTH 512
+__kernel void force (__local float *vpArray, __global float *virialArray, __global float *potentialArray, __global float *pval, __global float *vval, __global float *rx, __global float *ry, __global float *rz, __global float *fx, __global float *fy, __global float *fz, __private float sigma, __private float rcut, __private float vrcut, __private float dvrc12, __private float dvrcut, __global int *head, __global int *list, __private int mx, __private int my, __private int mz, __private int natoms, __private int step, __private float sfx, __private float sfy, __private float sfz)
 {
    
    __private float sigsq, rcutsq;
@@ -9,7 +9,7 @@ __kernel void force (__local float vpArray[], __global float *virialArray, __glo
    __private float potential, virial;
    __private int i, icell, j, jcell, nabor;
    __private int xi, yi, zi, ix, jx, kx, xcell, ycell, zcell;
-   __private int p_start = BLOCK_SIZE;
+   __private int p_start = BLOCK_WIDTH;
   // extern __shared__ float pArray[];
    sigsq  = sigma*sigma;
    rcutsq = rcut*rcut;
@@ -21,8 +21,8 @@ __kernel void force (__local float vpArray[], __global float *virialArray, __glo
    //__shared__ float rpArray[natoms];
    //unsigned int r_tid = threadIdx.x;
    //unsigned int r_i = blockIdx.x * (blockDim.x*2) + threadIdx.x;
-   __private int t = get_local_id(0);
-   __private int element = get_global_id(0);
+   __private unsigned int t = get_local_id(0);
+   __private unsigned int element = get_global_id(0);
    if (element < natoms)
    {
       rxi = rx[element];
@@ -90,7 +90,8 @@ __kernel void force (__local float vpArray[], __global float *virialArray, __glo
             vpArray[t + p_start] = potential;
             __private unsigned int stride;
             //__private unsigned int t = threadIdx.x;
-            for(stride = get_local_size(0) / 2; stride > 0; stride >>= 1)
+            __private int local_size = get_local_size(0);
+            for(stride = local_size / 2; stride > 0; stride >>= 1)
             {
                barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
                if (t<stride)
@@ -103,8 +104,8 @@ __kernel void force (__local float vpArray[], __global float *virialArray, __glo
             barrier(CLK_LOCAL_MEM_FENCE);
             if (t == 0)
             {
-               potentialArray[get_local_size(0)] = vpArray[p_start];
-               virialArray[get_local_size(0)] = vpArray[0];
+               potentialArray[get_group_id(0)] = vpArray[p_start];
+               virialArray[get_group_id(0)] = vpArray[0];
             }
             
             
@@ -126,20 +127,21 @@ __kernel void force (__local float vpArray[], __global float *virialArray, __glo
 }
 
 
-__kernel void finalResult(__local float vpArray[], __global float *potentialArray, __global float *virialArray, __global float *potentialValue, __global float *virialValue, __private int n)
+__kernel void finalResult(__local float *vpArray, __global float *potentialArray, __global float *virialArray, __global float *potentialValue, __global float *virialValue, __private int n)
 {
 
    __private unsigned int stride;
-   __private unsigned int t = get_local_id(0);
+   __private unsigned int t = get_global_id(0);
    __private int p_start = n;
    __private float potential;
    __private float virial;
+   __private int local_size = get_local_size(0);
    if (t < n)
    {
       vpArray[t] = virialArray[t];
       vpArray[t+p_start] = potentialArray[t];
       //vArray[threadIdx.x] = virialArray[threadIdx.x];
-      for(stride = get_local_size(0) / 2; stride > 0; stride >>= 1)
+      for(stride = local_size / 2; stride > 0; stride >>= 1)
       {
          barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
          if (t<stride)

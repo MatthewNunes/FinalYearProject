@@ -31,6 +31,6 @@ void tidyup (float ace, float ack, float acv, float acp, float acesq, float acks
    avt = avk/1.5;
    flt = flk/1.5;
 
-//   printf ("\n AVERAGES  %10.5f  %10.5f  %10.5f  %10.5f  %10.5f",ave,avk,avv,avp,avt);
-//   printf ("\n FLUCTS    %10.5f  %10.5f  %10.5f  %10.5f  %10.5f\n",fle,flk,flv,flp,flt);
+   printf ("\n AVERAGES  %10.5f  %10.5f  %10.5f  %10.5f  %10.5f",ave,avk,avv,avp,avt);
+   printf ("\n FLUCTS    %10.5f  %10.5f  %10.5f  %10.5f  %10.5f\n",fle,flk,flv,flp,flt);
 }

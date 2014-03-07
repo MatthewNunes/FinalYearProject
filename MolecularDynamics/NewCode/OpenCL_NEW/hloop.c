@@ -29,9 +29,7 @@ void hloop (float kinetic, int step, float vg, float wg, float kg, float freex, 
    if (nequil > step) scalet (vx, vy, vz, kinetic, eqtemp, *tmpx, iscale, natoms, step);
 
 /* Optionally print information */
-/**
       if (step%iprint == 0)
          printf("\n%8d%12.6f%12.6f%12.6f%12.6f%12.6f",step, en, kn, vn,
                  pres, *tmpx);
-*/
 }
