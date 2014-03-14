@@ -14,7 +14,7 @@ void loop_initialise(float *ace, float *acv, float *ack, float *acp, float *aces
    
       printf ("\n SIGMA/BOX              =  %10.4f",sigma);
       printf ("\n RCUT/BOX               =  %10.4f",rcut);
-      printf ("\n DT                     =  %10.4f",dt);
+      printf ("\n DT                     =  %14.8f",dt);
       printf ("\n ** MOLECULAR DYNAMICS BEGINS ** \n\n\n");
       printf ("\n TIMESTEP  ..ENERGY..  ..KINETIC.  ..POTENT..  .PRESSURE.  ..TEMPER..  ");
 }

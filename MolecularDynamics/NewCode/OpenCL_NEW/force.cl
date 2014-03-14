@@ -1,21 +1,24 @@
 #define BLOCK_WIDTH 512
-__kernel void force (__local float *vpArray, __global float *virialArray, __global float *potentialArray, __global float *pval, __global float *vval, __global float *rx, __global float *ry, __global float *rz, __global float *fx, __global float *fy, __global float *fz, __private float sigma, __private float rcut, __private float vrcut, __private float dvrc12, __private float dvrcut, __global int *head, __global int *list, __private int mx, __private int my, __private int mz, __private int natoms, __private int step, __private float sfx, __private float sfy, __private float sfz)
+__kernel void force (__global float *virialArray, __global float *potentialArray, __global float *pval, __global float *vval, __global float *rx, __global float *ry, __global float *rz, __global float *fx, __global float *fy, __global float *fz, __private float sigma, __private float rcut, __private float vrcut, __private float dvrc12, __private float dvrcut, __global int *head, __global int *list, __private int mx, __private int my, __private int mz, __private int natoms, __private float sfx, __private float sfy, __private float sfz)
 {
    __private float sigsq, rcutsq;
    __private float rxi, ryi, rzi, fxi, fyi, fzi;
    __private float rxij, ryij, rzij, rijsq;
    __private float rij, sr2, sr6, vij, wij, fij, fxij, fyij, fzij;
    __private float potential, virial;
-   __private int i, icell, j, jcell, nabor;
+   __private int i, j, jcell, nabor;
    __private int xi, yi, zi, ix, jx, kx, xcell, ycell, zcell;
-   __private int p_start = BLOCK_WIDTH;
+
+   __local float vArray[BLOCK_WIDTH]; 
+   __local float pArray[BLOCK_WIDTH];
+   vArray[get_local_id(0)] = 0.0;
+   pArray[get_local_id(0)] = 0.0;
 
    sigsq  = sigma*sigma;
    rcutsq = rcut*rcut;
-   *pval = 0.0;
-   *vval = 0.0;
    potential = 0.0;
    virial    = 0.0;
+
    
    __private unsigned int t = get_local_id(0);
    __private unsigned int element = get_global_id(0);
@@ -33,7 +36,6 @@ __kernel void force (__local float *vpArray, __global float *virialArray, __glob
            if(xi > mx) xi = mx;
            if(yi > my) yi = my;
            if(zi > mz) zi = mz;
-  	 icell = xi + (mx+2)*(yi+zi*(my+2));
   //	 if (xi<0 || xi> mx) printf("\nxi = %d\n",xi);
   //	 if (yi<0 || yi> my) printf("\nyi = %d\n",yi);
   //	 if (zi<0 || zi> mz) printf("\nzi = %d\n",zi);
@@ -88,9 +90,9 @@ __kernel void force (__local float *vpArray, __global float *virialArray, __glob
            *(fx+element) = 48.0*fxi;
            *(fy+element) = 48.0*fyi;
            *(fz+element) = 48.0*fzi;
-            vpArray[t] = virial;
+            vArray[t] = virial;
             //pArray[threadIdx.x] = potential;
-            vpArray[t + p_start] = potential;
+            pArray[t] = potential;
             __private unsigned int stride;
             //__private unsigned int t = threadIdx.x;
             __private int local_size = get_local_size(0);
@@ -99,55 +101,17 @@ __kernel void force (__local float *vpArray, __global float *virialArray, __glob
                barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
                if (t<stride)
                {
-                  vpArray[t]+= vpArray[t+stride];
-                  vpArray[t+p_start]+= vpArray[t+p_start+stride];
+                  vArray[t]+= vArray[t+stride];
+                  pArray[t]+= pArray[t+stride];
                   //vArray[t]+= vArray[t+stride];
                }
             }
             barrier(CLK_LOCAL_MEM_FENCE);
             if (t == 0)
             {
-               potentialArray[get_group_id(0)] = vpArray[p_start];
-               virialArray[get_group_id(0)] = vpArray[0];
+               potentialArray[get_group_id(0)] = pArray[0];
+               virialArray[get_group_id(0)] = vArray[0];
             }
    }
 }
 
-__kernel void finalResult(__global float *potentialArray, __global float *virialArray, __global float *potentialValue, __global float *virialValue)
-{
-
-   __private unsigned int stride;
-   __private unsigned int t = get_global_id(0);
-   __private int p_start = 1;
-   __private float potential;
-   __private float virial;
-   __private int local_size = get_global_size(0);
-  // vpArray[t] = virialArray[t];
-  // vpArray[t+p_start] = potentialArray[t];
-      //vArray[threadIdx.x] = virialArray[threadIdx.x];
-      for(stride = local_size / 2; stride > 0; stride >>= 1)
-      {
-         barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
-         if (t<stride)
-         {
-            virialArray[t] += virialArray[t + stride];
-            potentialArray[t]+= potentialArray[t+stride];
-            //virialArray[get_group_id] = 0.0;
-            //potentialArray[get_group_id] = 0.0;
-            //vArray[t]+= vArray[t+stride];
-         }
-      }
-    barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
-   if (t == 0)
-   {
-      potential = potentialArray[0];
-      virial = virialArray[0];
-      potential *= 4.0;
-      virial    *= 48.0/3.0;
-      *potentialValue = potential;
-      *virialValue = virial;
-   }
-
-   //*pval = potential;
-   //*vval = virial;
-}

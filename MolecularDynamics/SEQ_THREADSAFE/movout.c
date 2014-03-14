@@ -10,7 +10,7 @@ void movout (float *rx, float *ry, float *rz, float *vx, float *vy, float *vz, f
 //   printf("\nStarting movout: mx = %d, my = %d, mz = %d, natoms = %d, sfx = %f, sfy = %f, sfz = %f\n",mx, my, mz, natoms, sfx, sfy, sfz);
    for (icell=0;icell<ncells;++icell) head[icell] = -1;
 
-   //printf("\nStarting for loop in movout: mx = %d, my = %d, mz = %d, natoms = %d, sfx = %f, sfy = %f, sfz = %f\n",mx, my, mz, natoms, sfx, sfy, sfz);
+ //  printf("\nStarting for loop in movout: mx = %d, my = %d, mz = %d, natoms = %d, sfx = %f, sfy = %f, sfz = %f\n",mx, my, mz, natoms, sfx, sfy, sfz);
    for(i=0;i<natoms;i++){
       //printf("\ni = %d",i);
       if(rx[i] < -0.5){ rx[i] += 1.0;}
@@ -25,13 +25,17 @@ void movout (float *rx, float *ry, float *rz, float *vx, float *vy, float *vz, f
       xi = (int)((rx[i]+0.5)/sfx) + 1;
       yi = (int)((ry[i]+0.5)/sfy) + 1;
       zi = (int)((rz[i]+0.5)/sfz) + 1;
+      if(xi > mx) xi = mx;
+      if(yi > my) yi = my;
+      if(zi > mz) zi = mz;
       icell = xi + (mx+2)*(yi + zi*(my+2));
    //   printf("\nrx = %f, ry = %f, rz = %f",rx[i],ry[i],rz[i]);
-      //printf("\nxi = %d, yi = %d, zi = %d, icell = %d",xi,yi,zi,icell);
-      fflush(stdout);
+  //    if(icell>=(mx+2)*(my+2)*(mz+2))printf("\nxi = %d, yi = %d, zi = %d, icell = %d",xi,yi,zi,icell);
+//      fflush(stdout);
       list[i]      = head[icell];
       head [icell] = i;
    }
+   //printf("\nFinished main for loop in movout\n");
 
    pptr = natoms;
    for(j=1;j<my+1;j++)
@@ -116,7 +120,7 @@ void movout (float *rx, float *ry, float *rz, float *vx, float *vy, float *vz, f
 	   }
        }
 //   *ntot = pptr;
-//   printf("\n***movout ntot = %d\n",*ntot);
+ //  printf("\n***movout ntot = %d\n",*ntot);
 //   printf("\nLeaving movout: mx = %d, my = %d, mz = %d, natoms = %d, sfx = %f, sfy = %f, sfz = %f\n",mx, my, mz, natoms, sfx, sfy, sfz);
 }
 

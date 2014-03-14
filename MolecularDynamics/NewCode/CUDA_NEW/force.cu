@@ -1,8 +1,8 @@
-#define BLOCK_SIZE 24
+#define BLOCK_SIZE 512
 #include <stdio.h>
 #include <cuda.h>
 #include <math.h>
-/**
+
 __constant__ float sigma;
 __constant__ float rcut;
 __constant__ float vrcut;
@@ -81,16 +81,13 @@ void copySfz(float *sfff)
 {
   cudaMemcpyToSymbol("sfz", sfff, sizeof(float));
 }
-*/
+
 
 
 __global__ 
-void force (float *virialArray, float *potentialArray, float *pval, float *vval, float *rx, float *ry, float *rz, float *fx, float *fy, float *fz, float sigma, float rcut, float vrcut, float dvrc12, float dvrcut, int *head, int *list, int mx, int my, int mz, int natoms, int step, float sfx, float sfy, float sfz)
+void force (float *virialArray, float *potentialArray, float *pval, float *vval, float *rx, float *ry, float *rz, float *fx, float *fy, float *fz, float sigma, float rcut, float vrcut, float dvrc12, float dvrcut, int *head, int *list, int mx, int my, int mz, int natoms, float sfx, float sfy, float sfz)
 {
-   
-   int row = blockIdx.y * blockDim.y + threadIdx.y;
-   int col = blockIdx.x * blockDim.x + threadIdx.x;
-   int element = row * (BLOCK_SIZE * gridDim.x) + col;
+   int element = blockIdx.x * blockDim.x + threadIdx.x;
    /**
    if (element == (natoms - 1))
    {
@@ -102,22 +99,17 @@ void force (float *virialArray, float *potentialArray, float *pval, float *vval,
    float rxi, ryi, rzi, fxi, fyi, fzi;
    float rxij, ryij, rzij, rijsq;
    float rij, sr2, sr6, vij, wij, fij, fxij, fyij, fzij;
-   int icell, j, jcell;
+   int j, jcell;
    float potential, virial;
-   float potentialTemp, virialTemp;
    int xi, yi, zi, ix, jx, kx, xcell, ycell, zcell;
-   __shared__ float vArray[BLOCK_SIZE][BLOCK_SIZE];
-   __shared__ float pArray[BLOCK_SIZE][BLOCK_SIZE];
+   __shared__ float vArray[BLOCK_SIZE];
+   __shared__ float pArray[BLOCK_SIZE];
    sigsq  = __fmul_rn(sigma, sigma);
    rcutsq = __fmul_rn(rcut,rcut);
    potential = (float)0.0;
    virial = (float)0.0;
-   vArray[threadIdx.y][threadIdx.x] = (float)0.0;
-   pArray[threadIdx.y][threadIdx.x] = (float)0.0;
-   *vval = (float)0.0;
-   *pval = (float)0.0;
-   //virialArray[blockIdx.y * gridDim.x + blockIdx.x] = 0.0;
-   //potentialArray[blockIdx.y * gridDim.x + blockIdx.x] = 0.0;
+   vArray[threadIdx.x] = (float)0.0;
+   pArray[threadIdx.x] = (float)0.0;
    if (element < natoms)
    {
   	 rxi = rx[element];
@@ -178,7 +170,6 @@ void force (float *virialArray, float *potentialArray, float *pval, float *vval,
      //CHANGED THIS
      //xi + (mx+2)*(yi+zi*(my+2))
      //icell = __float2int_rn(__fadd_rn(xi,  __fmul_rn(__fadd_rn(mx,2), __fadd_rn(yi, __fmul_rn(zi, __fadd_rn(my,2))))));
-     icell = xi + (mx+2)*(yi+zi*(my+2));
      //TO THIS
      //icell = xi;
      
@@ -360,31 +351,46 @@ void force (float *virialArray, float *potentialArray, float *pval, float *vval,
             }
             */
 
-            vArray[threadIdx.y][threadIdx.x] = virial;
+            vArray[threadIdx.x] = virial;
             //pArray[threadIdx.x] = potential;
-            pArray[threadIdx.y][threadIdx.x] = potential;
-            unsigned int rowTemp;
-            unsigned int colTemp;
+            pArray[threadIdx.x] = potential;
             unsigned int t = threadIdx.x;
-            //pval[element] = potential;
-            //vval[element] = virial;
-            
-            __syncthreads();
-            virialTemp = (float)0.0;
-            potentialTemp = (float)0.0;
-            if ((threadIdx.x == 0) && (threadIdx.y == 0))
+            unsigned int stride;
+            for(stride = blockDim.x / 2; stride >0; stride >>= 1)
             {
-             // __syncthreads();
-              for(rowTemp = 0; rowTemp < BLOCK_SIZE; rowTemp++)
-              {
-                for(colTemp = 0; colTemp < BLOCK_SIZE; colTemp++)
-                {
-                 virialTemp+= vArray[rowTemp][colTemp];
-                 potentialTemp+= pArray[rowTemp][colTemp];                  
-                }
-
-              }
+               __syncthreads();
+               if (t<stride)
+               {
+                  vArray[t]+= vArray[t+stride];
+                  pArray[t]+= pArray[t+stride];
+                  //vArray[t]+= vArray[t+stride];
+               }
             }
+            
+            /**
+            __syncthreads();
+            if (t < 32)
+            {
+              vArray[t] += vArray[t + 32];
+              vArray[t] += vArray[t + 16];
+              vArray[t] += vArray[t + 8];
+              vArray[t] += vArray[t + 4];
+              vArray[t] += vArray[t + 2];
+              vArray[t] += vArray[t + 1];
+              pArray[t] += pArray[t + 32];
+              pArray[t] += pArray[t + 16];
+              pArray[t] += pArray[t + 8];
+              pArray[t] += pArray[t + 4];
+              pArray[t] += pArray[t + 2];
+              pArray[t] += pArray[t + 1];
+            }
+            */
+            __syncthreads();
+            if (threadIdx.x == 0)
+            {
+               virialArray[blockIdx.x] = vArray[0];
+               potentialArray[blockIdx.x] = pArray[0];
+            }            
             /**
             if ((element == 0) || (element == 512))
             {
@@ -392,17 +398,6 @@ void force (float *virialArray, float *potentialArray, float *pval, float *vval,
               printf("%d: pArray[0]= %f\n", element, pArray[0]);
             }
             */
-
-            //__syncthreads();
-            if((threadIdx.x == 0) && (threadIdx.y == 0))
-            {
-              virialArray[blockIdx.y * gridDim.x + blockIdx.x] = virialTemp;
-              potentialArray[blockIdx.y * gridDim.x + blockIdx.x] = potentialTemp;
-             // atomicAdd(vval, virialTemp);
-             // atomicAdd(pval, potentialTemp);
-              //printf("virialArray[%d]: %f\n", blockIdx.x, virialArray[blockIdx.x]);
-              //printf("potentialArray[%d]: %f\n", blockIdx.x, potentialArray[blockIdx.x]);
-            }
             
             /**if (element == (natoms - 1))
             {
@@ -412,43 +407,4 @@ void force (float *virialArray, float *potentialArray, float *pval, float *vval,
      }
      //return;
 
-}
-
-__global__
-void finalResult(float *potentialArray, float *virialArray, float *potentialValue, float *virialValue, int n)
-{
-
-   //printf("Final Result is called\n");
-   unsigned int stride;
-   unsigned int t = blockIdx.x;
-   int p_start = n;
-   //extern __shared__ float vpArray[];
- //  extern __shared__ float vArray[];
-   float potential;
-   float virial;
-      for(stride = ceil(n / (float)2); stride > 0; stride >>= 1)
-      {
-         __syncthreads();
-         if (t<stride)
-         {
-            virialArray[t] += virialArray[t+ stride];
-            potentialArray[t]+= potentialArray[t+stride];
-            //vArray[t]+= vArray[t+stride];
-         }
-      }
-   /**
-    __syncthreads();
-   if (t == 0)
-   {
-      potential = potentialArray[0];
-      virial = virialArray[0];
-      potential *= 4.0;
-      virial    *= 48.0/3.0;
-      *potentialValue = potential;
-      //printf("potential: %f\n",potential );
-      *virialValue = virial;
-   }
-  */
-   //*pval = potential;
-   //*vval = virial;
 }

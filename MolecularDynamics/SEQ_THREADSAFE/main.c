@@ -28,7 +28,7 @@ int main ( int argc, char *argv[])
    int nstep, nequil, iscale, nc, mx, my, mz, iprint;
    float *rx, *ry, *rz, *vx, *vy, *vz, *fx, *fy, *fz;
    float ace, acv, ack, acp, acesq, acvsq, acksq, acpsq, vg, kg, wg;
-   int   head[NCELL], list[NMAX];
+   int   *head, *list;
    int   natoms=0;
    int ierror;
    int jstart, step, itemp;
@@ -39,6 +39,7 @@ int main ( int argc, char *argv[])
    ierror = input_parameters (&sigma, &rcut, &dt, &eqtemp, &dens, &boxlx, &boxly, &boxlz, &sfx, &sfy, &sfz, &sr6, &vrcut, &dvrcut, &dvrc12, &freex, &nstep, &nequil, &iscale, &nc, &natoms, &mx, &my, &mz, &iprint);
    //printf ("\nReturned from input_parameters, natoms = %d\n", natoms);
 
+   //printf("\nmx = %d, my = %d, mz = %d\n",mx,my,mz);
    rx = (float *)malloc(2*natoms*sizeof(float));
    ry = (float *)malloc(2*natoms*sizeof(float));
    rz = (float *)malloc(2*natoms*sizeof(float));
@@ -48,35 +49,39 @@ int main ( int argc, char *argv[])
    fx = (float *)malloc(natoms*sizeof(float));
    fy = (float *)malloc(natoms*sizeof(float));
    fz = (float *)malloc(natoms*sizeof(float));
+   list = (int *)malloc(2*natoms*sizeof(int));
+   head= (int *)malloc((mx+2)*(my+2)*(mz+2)*sizeof(int));
+  // printf ("\nFinished allocating memory\n");
 
    initialise_particles (rx, ry, rz, vx, vy, vz, nc);
-   //printf ("\nReturned from initialise_particles\n");
+ //  printf ("\nReturned from initialise_particles\n");
 
    loop_initialise(&ace, &acv, &ack, &acp, &acesq, &acvsq, &acksq, &acpsq, sigma, rcut, dt);
-   //printf ("\nReturned from loop_initialise\n");
+//   printf ("\nReturned from loop_initialise\n");
 
-   output_particles(rx,ry,rz,vx,vy,vz,fx,fy,fz,0);
+//   output_particles(rx,ry,rz,vx,vy,vz,fx,fy,fz,0);
       movout (rx, ry, rz, vx, vy, vz, sfx, sfy, sfz, head, list, mx, my, mz, natoms);
-   //printf ("\nReturned from movout\n");
+ //  printf ("\nReturned from movout\n");
    //   check_cells(rx, ry, rz, head, list, mx, my, mz, natoms,0,0);
       force (&potential, &virial, rx, ry, rz, fx, fy, fz, sigma, rcut, vrcut, dvrc12, dvrcut, head, list, mx, my, mz, natoms,0, sfx, sfy, sfz);
-   //printf ("\nReturned from force: potential = %f, virial = %f, kinetic = %f\n",potential, virial, kinetic);
-   output_particles(rx,ry,rz,vx,vy,vz,fx,fy,fz,0);
+  // printf ("\nReturned from force: potential = %f, virial = %f, kinetic = %f\n",potential, virial, kinetic);
+//   output_particles(rx,ry,rz,vx,vy,vz,fx,fy,fz,0);
 
 
    for(step=1;step<=nstep;step++){
-   //printf ("\nStarted step %d\n",step);
+     // if(step>=85)printf ("\nStarted step %d\n",step);
       movea (rx, ry, rz, vx, vy, vz, fx, fy, fz, dt, natoms);
 //      check_cells(rx, ry, rz, head, list, mx, my, mz, natoms,step,step);
-   //printf ("\nReturned from movea\n");
+    //  if(step>85)printf ("\nReturned from movea\n");
       movout (rx, ry, rz, vx, vy, vz, sfx, sfy, sfz, head, list, mx, my, mz, natoms);
-  // printf ("\nReturned from movout\n");
+   //  if(step>85) printf ("\nReturned from movout\n");
   //    check_cells(rx, ry, rz, head, list, mx, my, mz, natoms,step,step);
       force (&potential, &virial, rx, ry, rz, fx, fy, fz, sigma, rcut, vrcut, dvrc12, dvrcut, head, list, mx, my, mz, natoms, step, sfx, sfy, sfz);
-   //printf ("\nReturned from force: potential = %f, virial = %f, kinetic = %f\n",potential, virial, kinetic);
+//      if(step>85)printf ("\nReturned from force: potential = %f, virial = %f, kinetic = %f\n",potential, virial, kinetic);
+ //     fflush(stdout);
       moveb (&kinetic, vx, vy, vz, fx, fy, fz, dt, natoms);
  //     check_cells(rx, ry, rz, head, list, mx, my, mz, natoms,step,step);
-//   printf ("\nReturned from moveb: potential = %f, virial = %f, kinetic = %f\n",potential, virial, kinetic);
+  // if(step>85)   printf ("\nReturned from moveb: potential = %f, virial = %f, kinetic = %f\n",potential, virial, kinetic);
       sum_energies (potential, kinetic, virial, &vg, &wg, &kg);
       hloop (kinetic, step, vg, wg, kg, freex, dens, sigma, eqtemp, &tmpx, &ace, &acv, &ack, &acp, &acesq, &acvsq, &acksq, &acpsq, vx, vy, vz, iscale, iprint, nequil, natoms);
    }

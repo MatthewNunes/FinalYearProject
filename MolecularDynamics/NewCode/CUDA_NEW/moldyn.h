@@ -45,8 +45,7 @@ extern void copySfx(float *sf);
 extern void copySfy(float *sff);
 extern void copySfz(float *sfff);
 */
-__global__ void force (float *virialArray, float *potentialArray, float *pval, float *vval, float *rx, float *ry, float *rz, float *fx, float *fy, float *fz, float sigma, float rcut, float vrcut, float dvrc12, float dvrcut, int *head, int *list, int mx, int my, int mz, int natoms, int step, float sfx, float sfy, float sfz);
-__global__ void finalResult(float *potentialArray, float *virialArray, float *potentialValue, float *virialValue, int n);
+__global__ void force (float *virialArray, float *potentialArray, float *pval, float *vval, float *rx, float *ry, float *rz, float *fx, float *fy, float *fz, float sigma, float rcut, float vrcut, float dvrc12, float dvrcut, int *head, int *list, int mx, int my, int mz, int natoms, float sfx, float sfy, float sfz);
 extern void movout (float *rx, float *ry, float *rz, float *vx, float *vy, float *vz, float sfx, float sfy, float sfz, int *head, int *list, int mx, int my, int mz, int natoms);
 extern void movea (float *rx, float *ry, float *rz, float *vx, float *vy, float *vz, float *fx, float *fy, float *fz, float dt, int natm);
 extern void moveb (float *kinetic, float *vx, float *vy, float *vz, float *fx, float *fy, float *fz, float dt, int natoms);
