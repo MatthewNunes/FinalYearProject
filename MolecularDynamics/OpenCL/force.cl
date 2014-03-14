@@ -101,7 +101,7 @@ __kernel void force (__local float *vpArray, __global float *virialArray, __glob
                   //vArray[t]+= vArray[t+stride];
                }
             }
-            barrier(CLK_LOCAL_MEM_FENCE);
+            barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
             if (t == 0)
             {
                potentialArray[get_group_id(0)] = vpArray[p_start];

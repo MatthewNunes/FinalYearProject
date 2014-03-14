@@ -113,42 +113,35 @@ __kernel void force (__local float *vpArray, __global float *virialArray, __glob
    }
 }
 
-__kernel void finalResult(__local float *vpArray, __global float *potentialArray, __global float *virialArray, __global float *potentialValue, __global float *virialValue, __private int n, __private int last)
+__kernel void finalResult(__global float *potentialArray, __global float *virialArray, __global float *potentialValue, __global float *virialValue)
 {
 
    __private unsigned int stride;
    __private unsigned int t = get_global_id(0);
-   __private int p_start = n;
+   __private int p_start = 1;
    __private float potential;
    __private float virial;
-   __private int local_size = get_local_size(0);
-   if (t < n)
-   {
-      vpArray[t] = virialArray[t];
-      vpArray[t+p_start] = potentialArray[t];
+   __private int local_size = get_global_size(0);
+  // vpArray[t] = virialArray[t];
+  // vpArray[t+p_start] = potentialArray[t];
       //vArray[threadIdx.x] = virialArray[threadIdx.x];
       for(stride = local_size / 2; stride > 0; stride >>= 1)
       {
          barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
          if (t<stride)
          {
-            vpArray[t] += vpArray[t + stride];
-            vpArray[t+p_start]+= vpArray[t+p_start+stride];
+            virialArray[t] += virialArray[t + stride];
+            potentialArray[t]+= potentialArray[t+stride];
+            //virialArray[get_group_id] = 0.0;
+            //potentialArray[get_group_id] = 0.0;
             //vArray[t]+= vArray[t+stride];
          }
       }
-      if (t == 0)
-      {
-        potentialArray[get_group_id(0)] = vpArray[p_start];
-        virialArray[get_group_id(0)] = vpArray[0];
-      }
-   
-   }
-    barrier(CLK_LOCAL_MEM_FENCE);
-   if ((t == 0) && (last == 1))
+    barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
+   if (t == 0)
    {
-      potential = vpArray[p_start];
-      virial = vpArray[0];
+      potential = potentialArray[0];
+      virial = virialArray[0];
       potential *= 4.0;
       virial    *= 48.0/3.0;
       *potentialValue = potential;

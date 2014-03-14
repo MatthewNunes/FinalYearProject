@@ -126,6 +126,11 @@ int main ( int argc, char *argv[])
       long unsigned int endTime;
       startTime = get_tick();
       force<<<numBlocks, BLOCK_WIDTH, 2* BLOCK_WIDTH * sizeof(float)>>>(d_virialArray, d_potentialArray, d_potential, d_virial, d_rx, d_ry, d_rz, d_fx, d_fy, d_fz, sigma, rcut, vrcut, dvrc12, dvrcut, d_head, d_list, mx, my, mz, natoms,0, sfx, sfy, sfz);
+      cudaError_t err = cudaPeekAtLastError();
+      if (err != cudaSuccess)
+      { 
+         printf("Error: %s\n", cudaGetErrorString(err));
+      }
       cudaDeviceSynchronize();
       endTime = get_tick();   
       elapsedTime += endTime - startTime;
@@ -136,7 +141,12 @@ int main ( int argc, char *argv[])
       //cudaMemcpy(potentialTest, d_potentialArray, sizeof(float) * numBlocks, cudaMemcpyDeviceToHost);
       //cudaMemcpy(virialArray, d_virialArray);
       startTime = get_tick();
-      finalResult<<<1,numBlocks,2* numBlocks * sizeof(float)>>>(d_potentialArray, d_virialArray, d_potential, d_virial, numBlocks);
+      finalResult<<<1,numBlocks>>>(d_potentialArray, d_virialArray, d_potential, d_virial, numBlocks);
+      cudaError_t err = cudaPeekAtLastError();
+      if (err != cudaSuccess)
+      { 
+         printf("Error: %s\n", cudaGetErrorString(err));
+      }
       cudaDeviceSynchronize();
       endTime = get_tick();
       elapsedTime += endTime - startTime;
@@ -173,6 +183,12 @@ int main ( int argc, char *argv[])
       startTime = get_tick();
       force<<<numBlocks, BLOCK_WIDTH, 2*BLOCK_WIDTH * sizeof(float)>>>(d_virialArray, d_potentialArray, d_potential, d_virial, d_rx, d_ry, d_rz, d_fx, d_fy, d_fz, sigma, rcut, vrcut, dvrc12, dvrcut, d_head, d_list, mx, my, mz, natoms,0, sfx, sfy, sfz);
       cudaDeviceSynchronize();
+      cudaError_t err = cudaPeekAtLastError();
+      if (err != cudaSuccess)
+      { 
+         printf("Error: %s\n", cudaGetErrorString(err));
+      }
+      cudaDeviceSynchronize();
       endTime = get_tick();
       elapsedTime += endTime - startTime;
       cudaMemcpy(fx, d_fx, natoms*sizeof(float), cudaMemcpyDeviceToHost);
@@ -181,7 +197,12 @@ int main ( int argc, char *argv[])
       //cudaMemcpy(virialTest, d_virialArray, sizeof(float) * numBlocks, cudaMemcpyDeviceToHost);
       //cudaMemcpy(potentialTest, d_potentialArray, sizeof(float) * numBlocks, cudaMemcpyDeviceToHost);
       startTime = get_tick();
-      finalResult<<<1, numBlocks, 2*numBlocks * sizeof(float)>>>(d_potentialArray, d_virialArray, d_potential, d_virial, numBlocks);
+      finalResult<<<1, numBlocks>>>(d_potentialArray, d_virialArray, d_potential, d_virial, numBlocks);
+      cudaError_t err = cudaPeekAtLastError();
+      if (err != cudaSuccess)
+      { 
+         printf("Error: %s\n", cudaGetErrorString(err));
+      }
       cudaDeviceSynchronize();
       endTime = get_tick();
       elapsedTime += endTime - startTime;

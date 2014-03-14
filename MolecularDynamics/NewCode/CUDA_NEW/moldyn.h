@@ -30,7 +30,22 @@ extern int read_input (float *sigma, float *rcut, float *dt, float *eqtemp, floa
 extern void initialise_particles (float rx[], float ry[], float rz[], float vx[], float vy[], float vz[], int nc);
 extern void pseudorand(int *is, float *c);
 extern void loop_initialise(float *ace, float *acv, float *ack, float *acp, float *acesq, float *acvsq, float *acksq, float *acpsq, float sigma, float rcut, float dt);
-__global__ void force (float *virialArray, float *potentialArray, float *pval, float *vval, float *rx, float *ry, float *rz, float *fx, float *fy, float *fz, float sigma, float rcut, float vrcut, float dvrc12, float dvrcut, int *head, int *list, int mx, int my, int mz, int natoms, int step, float sfx,float sfy, float sfz);
+/**
+extern void copySigma(float *sig);
+extern void copyRcut(float *rcu);
+extern void copyVrcut(float *vrc);
+extern void copyDvrc12(float *dvr);
+extern void copyDvrcut(float *dvrc);
+extern void copyMx(int *m);
+extern void copyMy(int *mm);
+extern void copyMz(int *mmm);
+extern void copyNatoms(int *nat);
+extern void copyStep(int *ste);
+extern void copySfx(float *sf);
+extern void copySfy(float *sff);
+extern void copySfz(float *sfff);
+*/
+__global__ void force (float *virialArray, float *potentialArray, float *pval, float *vval, float *rx, float *ry, float *rz, float *fx, float *fy, float *fz, float sigma, float rcut, float vrcut, float dvrc12, float dvrcut, int *head, int *list, int mx, int my, int mz, int natoms, int step, float sfx, float sfy, float sfz);
 __global__ void finalResult(float *potentialArray, float *virialArray, float *potentialValue, float *virialValue, int n);
 extern void movout (float *rx, float *ry, float *rz, float *vx, float *vy, float *vz, float sfx, float sfy, float sfz, int *head, int *list, int mx, int my, int mz, int natoms);
 extern void movea (float *rx, float *ry, float *rz, float *vx, float *vy, float *vz, float *fx, float *fy, float *fz, float dt, int natm);
