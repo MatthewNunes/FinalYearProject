@@ -233,16 +233,6 @@ int main ( int argc, char *argv[])
      perror("Couldn't create a command queue");
      exit(1);   
    }   
-   d_potential = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(float), potentialPointer, &err);
-   if(err < 0) {
-     perror("Couldn't create a command queue");
-     exit(1);   
-   }   
-   d_virial = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(float), virialPointer, &err);
-   if(err < 0) {
-     perror("Couldn't create a command queue");
-     exit(1);   
-   }   
    d_virialArray = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,  sizeof(float) * (numBlocks), virialArray, &err);
    if(err < 0) {
      perror("Couldn't create a command queue");
@@ -253,36 +243,34 @@ int main ( int argc, char *argv[])
      perror("Couldn't create a command queue");
      exit(1);   
    }
+
     
    err = clSetKernelArg(force_kernel, 0, sizeof(cl_mem), &d_virialArray);
    err |= clSetKernelArg(force_kernel, 1, sizeof(cl_mem), &d_potentialArray);
-   err |= clSetKernelArg(force_kernel, 2, sizeof(cl_mem), &d_potential);
-   err |= clSetKernelArg(force_kernel, 3, sizeof(cl_mem), &d_virial);
-   err |= clSetKernelArg(force_kernel, 4, sizeof(cl_mem), &d_rx);
-   err |= clSetKernelArg(force_kernel, 5, sizeof(cl_mem), &d_ry);
-   err |= clSetKernelArg(force_kernel, 6, sizeof(cl_mem), &d_rz);
-   err |= clSetKernelArg(force_kernel, 7, sizeof(cl_mem), &d_fx);
-   err |= clSetKernelArg(force_kernel, 8, sizeof(cl_mem), &d_fy);
-   err |= clSetKernelArg(force_kernel, 9, sizeof(cl_mem), &d_fz);
-   err |= clSetKernelArg(force_kernel, 10, sizeof(sigma), &sigma);
-   err |= clSetKernelArg(force_kernel, 11, sizeof(rcut), &rcut);
-   err |= clSetKernelArg(force_kernel, 12, sizeof(vrcut), &vrcut);
-   err |= clSetKernelArg(force_kernel, 13, sizeof(dvrc12), &dvrc12);
-   err |= clSetKernelArg(force_kernel, 14, sizeof(dvrcut), &dvrcut);
-   err |= clSetKernelArg(force_kernel, 15, sizeof(cl_mem), &d_head);
-   err |= clSetKernelArg(force_kernel, 16, sizeof(cl_mem), &d_list);
-   err |= clSetKernelArg(force_kernel, 17, sizeof(mx), &mx);
-   err |= clSetKernelArg(force_kernel, 18, sizeof(my), &my);
-   err |= clSetKernelArg(force_kernel, 19, sizeof(mz), &mz);
-   err |= clSetKernelArg(force_kernel, 20, sizeof(natoms), &natoms);
-   err |= clSetKernelArg(force_kernel, 21, sizeof(sfx), &sfx);
-   err |= clSetKernelArg(force_kernel, 22, sizeof(sfy), &sfy);
-   err |= clSetKernelArg(force_kernel, 23, sizeof(sfz), &sfz);
+   err |= clSetKernelArg(force_kernel, 2, sizeof(cl_mem), &d_rx);
+   err |= clSetKernelArg(force_kernel, 3, sizeof(cl_mem), &d_ry);
+   err |= clSetKernelArg(force_kernel, 4, sizeof(cl_mem), &d_rz);
+   err |= clSetKernelArg(force_kernel, 5, sizeof(cl_mem), &d_fx);
+   err |= clSetKernelArg(force_kernel, 6, sizeof(cl_mem), &d_fy);
+   err |= clSetKernelArg(force_kernel, 7, sizeof(cl_mem), &d_fz);
+   err |= clSetKernelArg(force_kernel, 8, sizeof(sigma), &sigma);
+   err |= clSetKernelArg(force_kernel, 9, sizeof(rcut), &rcut);
+   err |= clSetKernelArg(force_kernel, 10, sizeof(vrcut), &vrcut);
+   err |= clSetKernelArg(force_kernel, 11, sizeof(dvrc12), &dvrc12);
+   err |= clSetKernelArg(force_kernel, 12, sizeof(dvrcut), &dvrcut);
+   err |= clSetKernelArg(force_kernel, 13, sizeof(cl_mem), &d_head);
+   err |= clSetKernelArg(force_kernel, 14, sizeof(cl_mem), &d_list);
+   err |= clSetKernelArg(force_kernel, 15, sizeof(mx), &mx);
+   err |= clSetKernelArg(force_kernel, 16, sizeof(my), &my);
+   err |= clSetKernelArg(force_kernel, 17, sizeof(mz), &mz);
+   err |= clSetKernelArg(force_kernel, 18, sizeof(natoms), &natoms);
+   err |= clSetKernelArg(force_kernel, 19, sizeof(sfx), &sfx);
+   err |= clSetKernelArg(force_kernel, 20, sizeof(sfy), &sfy);
+   err |= clSetKernelArg(force_kernel, 21, sizeof(sfz), &sfz);
    if(err < 0) {
      printf("Couldn't set an argument for the transpose kernel");
      exit(1);   
    }
-   
    //size_t max_size;
    //clGetKernelWorkGroupInfo(add_kernel, device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(max_size), &max_size, NULL);
    //printf("\nMAX SIZE: %d\n", max_size);
@@ -300,6 +288,7 @@ int main ( int argc, char *argv[])
    long unsigned int startTime;
    long unsigned int endTime;
    
+
    startTime = get_tick();
    err = clEnqueueNDRangeKernel(queue, force_kernel, 1, NULL, global_size, local_size, 0, NULL, NULL);
    clFinish(queue);
@@ -319,7 +308,6 @@ int main ( int argc, char *argv[])
      exit(1);   
    }
    elapsedTime += endTime - startTime;
-   
    err = clEnqueueReadBuffer(queue, d_fx, CL_TRUE, 0, sizeof(float) * natoms, fx, 0, NULL, NULL);
    err |= clEnqueueReadBuffer(queue, d_fy, CL_TRUE, 0, sizeof(float) * natoms, fy, 0, NULL, NULL);
    err |= clEnqueueReadBuffer(queue, d_fz, CL_TRUE, 0, sizeof(float) * natoms, fz, 0, NULL, NULL);
@@ -336,7 +324,7 @@ int main ( int argc, char *argv[])
      printf("CL_MEM_OBJECT_ALLOCATION_FAILURE: %d\n",CL_MEM_OBJECT_ALLOCATION_FAILURE);
      printf("CL_OUT_OF_HOST_MEMORY: %d\n", CL_OUT_OF_HOST_MEMORY);
      exit(1);   
-   }   
+   }
    clFinish(queue);
    virial = 0.0;
    potential = 0.0;
@@ -348,7 +336,6 @@ int main ( int argc, char *argv[])
    }
    virial *= 48.0/3.0;
    potential *= 4.0;
-   
 
   // printf ("\nReturned from force: potential = %f, virial = %f, kinetic = %f\n",potential, virial, kinetic);
 //   output_particles(rx,ry,rz,vx,vy,vz,fx,fy,fz,0);
@@ -370,8 +357,6 @@ int main ( int argc, char *argv[])
       clReleaseMemObject(d_fz);
       clReleaseMemObject(d_head);
       clReleaseMemObject(d_list);
-      clReleaseMemObject(d_potential);
-      clReleaseMemObject(d_virial);
       clReleaseMemObject(d_virialArray);
       clReleaseMemObject(d_potentialArray);
    d_rx = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(float) * natoms * 2, rx, &err);
@@ -413,17 +398,7 @@ int main ( int argc, char *argv[])
    if(err < 0) {
      perror("Couldn't create a command queue");
      exit(1);   
-   }   
-   d_potential = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(float), potentialPointer, &err);
-   if(err < 0) {
-     perror("Couldn't create a command queue");
-     exit(1);   
-   }   
-   d_virial = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(float), virialPointer, &err);
-   if(err < 0) {
-     perror("Couldn't create a command queue");
-     exit(1);   
-   }   
+   }    
    d_virialArray = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,  sizeof(float) * (numBlocks), virialArray, &err);
    if(err < 0) {
      perror("Couldn't create a command queue");
@@ -437,28 +412,26 @@ int main ( int argc, char *argv[])
     
    err = clSetKernelArg(force_kernel, 0, sizeof(cl_mem), &d_virialArray);
    err |= clSetKernelArg(force_kernel, 1, sizeof(cl_mem), &d_potentialArray);
-   err |= clSetKernelArg(force_kernel, 2, sizeof(cl_mem), &d_potential);
-   err |= clSetKernelArg(force_kernel, 3, sizeof(cl_mem), &d_virial);
-   err |= clSetKernelArg(force_kernel, 4, sizeof(cl_mem), &d_rx);
-   err |= clSetKernelArg(force_kernel, 5, sizeof(cl_mem), &d_ry);
-   err |= clSetKernelArg(force_kernel, 6, sizeof(cl_mem), &d_rz);
-   err |= clSetKernelArg(force_kernel, 7, sizeof(cl_mem), &d_fx);
-   err |= clSetKernelArg(force_kernel, 8, sizeof(cl_mem), &d_fy);
-   err |= clSetKernelArg(force_kernel, 9, sizeof(cl_mem), &d_fz);
-   err |= clSetKernelArg(force_kernel, 10, sizeof(sigma), &sigma);
-   err |= clSetKernelArg(force_kernel, 11, sizeof(rcut), &rcut);
-   err |= clSetKernelArg(force_kernel, 12, sizeof(vrcut), &vrcut);
-   err |= clSetKernelArg(force_kernel, 13, sizeof(dvrc12), &dvrc12);
-   err |= clSetKernelArg(force_kernel, 14, sizeof(dvrcut), &dvrcut);
-   err |= clSetKernelArg(force_kernel, 15, sizeof(cl_mem), &d_head);
-   err |= clSetKernelArg(force_kernel, 16, sizeof(cl_mem), &d_list);
-   err |= clSetKernelArg(force_kernel, 17, sizeof(mx), &mx);
-   err |= clSetKernelArg(force_kernel, 18, sizeof(my), &my);
-   err |= clSetKernelArg(force_kernel, 19, sizeof(mz), &mz);
-   err |= clSetKernelArg(force_kernel, 20, sizeof(natoms), &natoms);
-   err |= clSetKernelArg(force_kernel, 21, sizeof(sfx), &sfx);
-   err |= clSetKernelArg(force_kernel, 22, sizeof(sfy), &sfy);
-   err |= clSetKernelArg(force_kernel, 23, sizeof(sfz), &sfz);
+   err |= clSetKernelArg(force_kernel, 2, sizeof(cl_mem), &d_rx);
+   err |= clSetKernelArg(force_kernel, 3, sizeof(cl_mem), &d_ry);
+   err |= clSetKernelArg(force_kernel, 4, sizeof(cl_mem), &d_rz);
+   err |= clSetKernelArg(force_kernel, 5, sizeof(cl_mem), &d_fx);
+   err |= clSetKernelArg(force_kernel, 6, sizeof(cl_mem), &d_fy);
+   err |= clSetKernelArg(force_kernel, 7, sizeof(cl_mem), &d_fz);
+   err |= clSetKernelArg(force_kernel, 8, sizeof(sigma), &sigma);
+   err |= clSetKernelArg(force_kernel, 9, sizeof(rcut), &rcut);
+   err |= clSetKernelArg(force_kernel, 10, sizeof(vrcut), &vrcut);
+   err |= clSetKernelArg(force_kernel, 11, sizeof(dvrc12), &dvrc12);
+   err |= clSetKernelArg(force_kernel, 12, sizeof(dvrcut), &dvrcut);
+   err |= clSetKernelArg(force_kernel, 13, sizeof(cl_mem), &d_head);
+   err |= clSetKernelArg(force_kernel, 14, sizeof(cl_mem), &d_list);
+   err |= clSetKernelArg(force_kernel, 15, sizeof(mx), &mx);
+   err |= clSetKernelArg(force_kernel, 16, sizeof(my), &my);
+   err |= clSetKernelArg(force_kernel, 17, sizeof(mz), &mz);
+   err |= clSetKernelArg(force_kernel, 18, sizeof(natoms), &natoms);
+   err |= clSetKernelArg(force_kernel, 19, sizeof(sfx), &sfx);
+   err |= clSetKernelArg(force_kernel, 20, sizeof(sfy), &sfy);
+   err |= clSetKernelArg(force_kernel, 21, sizeof(sfz), &sfz);
 
    if(err < 0) {
      printf("Couldn't set an argument for the transpose kernel");

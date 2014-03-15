@@ -1,5 +1,5 @@
 #define BLOCK_WIDTH 512
-__kernel void force (__global float *virialArray, __global float *potentialArray, __global float *pval, __global float *vval, __global float *rx, __global float *ry, __global float *rz, __global float *fx, __global float *fy, __global float *fz, __private float sigma, __private float rcut, __private float vrcut, __private float dvrc12, __private float dvrcut, __global int *head, __global int *list, __private int mx, __private int my, __private int mz, __private int natoms, __private float sfx, __private float sfy, __private float sfz)
+__kernel void force (__global float *virialArray, __global float *potentialArray, __global float *rx, __global float *ry, __global float *rz, __global float *fx, __global float *fy, __global float *fz, __private float sigma, __private float rcut, __private float vrcut, __private float dvrc12, __private float dvrcut, __global int *head, __global int *list, __private int mx, __private int my, __private int mz, __private int natoms, __private float sfx, __private float sfy, __private float sfz)
 {
    __private float sigsq, rcutsq;
    __private float rxi, ryi, rzi, fxi, fyi, fzi;

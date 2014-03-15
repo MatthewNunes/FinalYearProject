@@ -17,21 +17,9 @@ __constant__ float sfx;
 __constant__ float sfy;
 __constant__ float sfz;
 
-void copyToConstant(float *sig, float *rcu, float *vrc, float *dvr, float *dvrc, int * m, int *mm, int *mmm, int *nat, int *ste, float *sf, float *sff, float *sfff)
+void copySigma(float *sig)
 {
   cudaMemcpyToSymbol("sigma", sig, sizeof(float));
-  cudaMemcpyToSymbol("rcut", rcu, sizeof(float));
-  cudaMemcpyToSymbol("vrcut", vrc, sizeof(float));
-  cudaMemcpyToSymbol("dvrc12", dvr, sizeof(float));
-  cudaMemcpyToSymbol("dvrcut", dvrc, sizeof(float));
-  cudaMemcpyToSymbol("mx", m, sizeof(int));
-  cudaMemcpyToSymbol("my", mm, sizeof(int));
-  cudaMemcpyToSymbol("mz", mmm, sizeof(int));
-  cudaMemcpyToSymbol("natoms", nat, sizeof(int));
-  cudaMemcpyToSymbol("step", ste, sizeof(int));
-  cudaMemcpyToSymbol("sfx", sf, sizeof(float));
-  cudaMemcpyToSymbol("sfy", sff, sizeof(float));
-  cudaMemcpyToSymbol("sfz", sfff, sizeof(float));
 }
 
 void copyRcut(float *rcu)
@@ -97,7 +85,7 @@ void copySfz(float *sfff)
 
 
 __global__ 
-void force (float *virialArray, float *potentialArray, float *pval, float *vval, float *rx, float *ry, float *rz, float *fx, float *fy, float *fz, int *head, int *list)
+void force (float *virialArray, float *potentialArray, float *rx, float *ry, float *rz, float *fx, float *fy, float *fz, float sigma, float rcut, float vrcut, float dvrc12, float dvrcut, int *head, int *list, int mx, int my, int mz, int natoms, float sfx, float sfy, float sfz)
 {
    int element = blockIdx.x * blockDim.x + threadIdx.x;
    /**
