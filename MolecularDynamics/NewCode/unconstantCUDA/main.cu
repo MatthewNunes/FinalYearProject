@@ -153,7 +153,7 @@ int main ( int argc, char *argv[])
       CUDA_CHECK_RETURN(cudaPeekAtLastError());
       CUDA_CHECK_RETURN(cudaDeviceSynchronize());
       endTime = get_tick();   
-      elapsedTime += endTime - startTime;
+      elapsedTime += (endTime - startTime);
       CUDA_CHECK_RETURN(cudaMemcpy(fx, d_fx, natoms * sizeof(float), cudaMemcpyDeviceToHost));
       CUDA_CHECK_RETURN(cudaMemcpy(fy, d_fy, natoms * sizeof(float), cudaMemcpyDeviceToHost));
       CUDA_CHECK_RETURN(cudaMemcpy(fz, d_fz, natoms * sizeof(float), cudaMemcpyDeviceToHost));
@@ -232,7 +232,7 @@ int main ( int argc, char *argv[])
       CUDA_CHECK_RETURN(cudaPeekAtLastError());
       CUDA_CHECK_RETURN(cudaDeviceSynchronize());
       endTime = get_tick();
-      elapsedTime += endTime - startTime;
+      elapsedTime += (endTime - startTime);
       CUDA_CHECK_RETURN(cudaMemcpy(fx, d_fx, natoms * sizeof(float), cudaMemcpyDeviceToHost));
       CUDA_CHECK_RETURN(cudaMemcpy(fy, d_fy, natoms * sizeof(float), cudaMemcpyDeviceToHost));
       CUDA_CHECK_RETURN(cudaMemcpy(fz, d_fz, natoms * sizeof(float), cudaMemcpyDeviceToHost));

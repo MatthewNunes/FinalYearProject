@@ -25,6 +25,12 @@ void movout (float *rx, float *ry, float *rz, float *vx, float *vy, float *vz, f
       xi = (int)((rx[i]+0.5)/sfx) + 1;
       yi = (int)((ry[i]+0.5)/sfy) + 1;
       zi = (int)((rz[i]+0.5)/sfz) + 1;
+      if(xi > mx) xi = mx;
+      if(yi > my) yi = my;
+      if(zi > mz) zi = mz;
+      if(xi < 1) xi = 1;
+      if(yi < 1) yi = 1;
+      if(zi < 1) zi = 1;
       icell = xi + (mx+2)*(yi + zi*(my+2));
    //   printf("\nrx = %f, ry = %f, rz = %f",rx[i],ry[i],rz[i]);
       //printf("\nxi = %d, yi = %d, zi = %d, icell = %d",xi,yi,zi,icell);
@@ -115,8 +121,6 @@ void movout (float *rx, float *ry, float *rz, float *vx, float *vy, float *vz, f
 	       p = list[p];
 	   }
        }
-//   *ntot = pptr;
-//   printf("\n***movout ntot = %d\n",*ntot);
 //   printf("\nLeaving movout: mx = %d, my = %d, mz = %d, natoms = %d, sfx = %f, sfy = %f, sfz = %f\n",mx, my, mz, natoms, sfx, sfy, sfz);
 }
 

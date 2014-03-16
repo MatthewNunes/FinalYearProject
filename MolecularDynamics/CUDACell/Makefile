@@ -1,16 +1,16 @@
 
-MAKER         = nvcc
-OPTFLAGS    = -O
+MAKER         = nvcc -gencode arch=compute_20,code=sm_20
+OPTFLAGS    = --ptxas-options=-v -O
 DEBUG       = 
-LIB_LIST    = -lm -lOpenCL
+LIB_LIST    = -lm 
 
-SUFFIX = c
+SUFFIX = cu
 
 PROGRAM = moldyn
 
-SRCS  = main.c    input-parameters.c read-input.c \
-        initialise-particles.c pseudorand.c loop-initialise.c movout.c \
-        movea.c moveb.c sum-energies.c hloop.c scalet.c tidyup.c check_cells.c output_particles.c force_ij.c
+SRCS  = main.cu    input-parameters.cu read-input.cu set-cell-neighbours.cu \
+        initialise-particles.cu pseudorand.cu loop-initialise.cu force.cu movout.cu \
+        movea.cu moveb.cu sum-energies.cu hloop.cu scalet.cu tidyup.cu check_cells.cu output_particles.cu force_ij.cu
 
 ### End User configurable options ###
 

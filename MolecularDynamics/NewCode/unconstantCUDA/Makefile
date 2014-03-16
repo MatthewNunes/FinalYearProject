@@ -1,6 +1,6 @@
 
 MAKER         = nvcc -gencode arch=compute_20,code=sm_20
-OPTFLAGS    = --ptxas-options=-v
+OPTFLAGS    = --ptxas-options=-v -O
 DEBUG       = 
 LIB_LIST    = -lm 
 

@@ -1,4 +1,3 @@
-#include "moldyn.h"
 void set_nearest_cells (int *map)
 {
    map[5] = map[6] = map[7] = map[8] = map[14] = map[15] = map[16] = map[17] = map[22] = map[23] = map[24] = map[25] = map[26] = 1;

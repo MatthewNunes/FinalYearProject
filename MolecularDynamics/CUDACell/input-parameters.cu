@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "moldyn.h"
 
-int input_parameters (float *sigma, float *rcut, float *dt, float *eqtemp, float *dens, float *boxlx, float *boxly, float *boxlz, float *sfx, float *sfy, float *sfz, float *sr6, float *vrcut, float *dvrcut, float *dvrc12, float *freex, int *nstep, int *nequil, int *iscale, int *nc, int *natoms, int *mx, int *my, int *mz, int *iprint)
+int input_parameters (float *sigma, float *rcut, float *dt, float *eqtemp, float *dens, float *boxlx, float *boxly, float *boxlz, float *sfx, float *sfy, float *sfz, float *sr6, float *vrcut, float *dvrcut, float *dvrc12, float *freex, int *nstep, int *nequil, int *iscale, int *nc, int *natoms, int *mx, int *my, int *mz, int *iprint, int *map)
 {
    int abort;
 
@@ -21,6 +21,8 @@ int input_parameters (float *sigma, float *rcut, float *dt, float *eqtemp, float
    *sfx = *boxlx/(float)(*mx);
    *sfy = *boxly/(float)(*my);
    *sfz = *boxlz/(float)(*mz);
+
+   //set_nearest_cells (map, mx, my, mz);
 
    *sr6    = (*sigma/(*rcut))*(*sigma/(*rcut));
    *sr6    = (*sr6)*(*sr6)*(*sr6);
