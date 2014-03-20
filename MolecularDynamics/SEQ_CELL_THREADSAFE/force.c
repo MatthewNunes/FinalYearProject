@@ -78,6 +78,7 @@ void force (float *pval, float *vval, float *rx, float *ry, float *rz, float *fx
                            jcell = xcell + (mx+2)*(ycell+(my+2)*zcell);
 			//       printf("%d (%d,%d,%d); ",jcell,xcell,ycell,zcell);
 		           if(icell!=jcell) {
+                                printf("jcell: %d\n", jcell);
                                j = head[jcell];
                                while (j>=0) {
                                    rxij = rxi - rx[j];

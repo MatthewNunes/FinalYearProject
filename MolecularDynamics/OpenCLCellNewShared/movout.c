@@ -38,7 +38,6 @@ void movout (float *rx, float *ry, float *rz, float *vx, float *vy, float *vz, f
       list[i]      = head[icell];
       head [icell] = i;
    }
- //  printf("4\n");
 
    pptr = natoms;
    for(j=1;j<my+1;j++)
@@ -67,57 +66,34 @@ void movout (float *rx, float *ry, float *rz, float *vx, float *vy, float *vz, f
 	       pptr++;
 	       p = list[p];
 	   }
-       }   
+       }
    for(k=0;k<mz+2;k++)
        for(j=1;j<my+1;j++){
            src = mx;
 	   dst = 0;
-	  // printf("5.2\n");
 	   scell = src + (mx+2)*(j + (my+2)*k);
-	  // printf("5.3\n");
 	   dcell = dst + (mx+2)*(j + (my+2)*k);
-	 //  printf("5.4\n");
 	   p = head[scell];
-	 //  printf("5.5\n");
 	   while(p>=0){
-	   //    printf("5.6\n");
 	       rx[pptr] = rx[p] - 1.0; ry[pptr] = ry[p]; rz[pptr] = rz[p];
-	    //   printf("5.7\n");
 	       list[pptr] = head[dcell];
-	      // printf("5.8\n");
 	       head[dcell] = pptr;
-	     //  printf("5.9\n");
 	       pptr++;
-	     //  printf("5.10\n");
 	       p = list[p];
-	   //    printf("5.11\n");
 	   }
            src = 1;
-         //  printf("5.12\n");
 	   dst = mx+1;
-	  // printf("5.13\n");
 	   scell = src + (mx+2)*(j + (my+2)*k);
-	  // printf("5.14\n");
 	   dcell = dst + (mx+2)*(j + (my+2)*k);
-	  // printf("5.15\n");
 	   p = head[scell];
-	  // printf("5.16\n");
 	   while(p>=0){
-	    //   printf("5.165\n");
-	      // printf("pptr: %d\n",pptr );
 	       rx[pptr] = rx[p] + 1.0; ry[pptr] = ry[p]; rz[pptr] = rz[p];
-	       //printf("5.17\n");
 	       list[pptr] = head[dcell];
-	      // printf("5.18\n");
 	       head[dcell] = pptr;
-	       //printf("5.19\n");
 	       pptr++;
-	      // printf("5.20\n");
 	       p = list[p];
-	//       printf("5.21\n");
 	   }
        }
-      // printf("6\n");
    for(k=0;k<mz+2;k++)
        for(i=0;i<mx+2;i++){
            src = my;
@@ -145,7 +121,6 @@ void movout (float *rx, float *ry, float *rz, float *vx, float *vy, float *vz, f
 	       p = list[p];
 	   }
        }
-       //printf("7\n");
 //   printf("\nLeaving movout: mx = %d, my = %d, mz = %d, natoms = %d, sfx = %f, sfy = %f, sfz = %f\n",mx, my, mz, natoms, sfx, sfy, sfz);
 }
 

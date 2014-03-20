@@ -4,9 +4,9 @@
 
 #include "moldyn.h"
 
-#define BLOCK_SIZE 200
+#define BLOCK_SIZE 256
 
-__global__ void force (int maxP, float *potentialArray, float *virialArray, float *pval, float *vval, float *rx, float *ry, float *rz, float *fx, float *fy, float *fz, float sigma, float rcut, float vrcut, float dvrc12, float dvrcut, int *head, int *list, int *map, int mx, int my, int mz, int natoms)
+__global__ void force (int maxP, float *potentialArray, float *virialArray, float *pval, float *vval, float *rx, float *ry, float *rz, float *fx, float *fy, float *fz, float sigma, float rcut, float vrcut, float dvrc12, float dvrcut, int *head, int *list, int mx, int my, int mz)
 {
    float sigsq, rcutsq;
    float rxi, ryi, rzi, fxi, fyi, fzi;
@@ -17,15 +17,10 @@ __global__ void force (int maxP, float *potentialArray, float *virialArray, floa
    int xi, yi, zi, ix, jx, kx, xcell, ycell, zcell;
    float valv, valp;
 
-   int jSh;
-  
-   int iSh;
-   int offset; 
-
    sigsq  = sigma*sigma;
    rcutsq = rcut*rcut;
-   //printf("Before Shared Memory\n");
    extern __shared__ float rx_shared[];
+
 //   for(i=0;i<natoms;++i){
 //      *(fx+i) = 0.0;
 //      *(fy+i) = 0.0;
@@ -36,10 +31,14 @@ __global__ void force (int maxP, float *potentialArray, float *virialArray, floa
    virial    = 0.0;
    valv = 0.0;
    valp = 0.0;
-   int jTemp = 0;
+   int iSh;
+   int jTemp;
+   int jSh;
+   
+
    int element = blockDim.x * blockIdx.x + threadIdx.x;
 
-   //potentialArray[element] = 0.0;
+  // potentialArray[element] = 0.0;
   // virialArray[element] = 0.0;
    if(element < ((mx+2) * (my + 2) * (mz + 2)))
    {
@@ -47,11 +46,8 @@ __global__ void force (int maxP, float *potentialArray, float *virialArray, floa
       xi = element%(mx+2);
       yi = (element/(mx+2))%(my+2);
       zi = element/((mx+2)*(my+2));
-     if((xi>0 && xi <(mx+1))&&(yi>0 && yi<(my+1))&&(zi>0 && zi<(mz+1)))
-      {
         i = head[element];
         
-        //SHARED MEMORY STARTS
         iSh = 0;
       
         while (i >= 0)
@@ -64,12 +60,22 @@ __global__ void force (int maxP, float *potentialArray, float *virialArray, floa
           iSh+=1;
           
         }
+    }
+    __syncthreads();
+
+    if(element < ((mx+2) * (my + 2) * (mz + 2)))
+   {
+
+      xi = element%(mx+2);
+      yi = (element/(mx+2))%(my+2);
+      zi = element/((mx+2)*(my+2));
+      if(((xi>0) && (xi <(mx+1)))&&((yi>0) && (yi<(my+1)))&&((zi>0) && (zi<(mz+1))))
+      {   
         i = head[element];
         iSh = 0;
-        //SHARED MEMORY ENDS
+
         while (i>=0) 
         {
-
           rxi = rx_shared[3*maxP*threadIdx.x + 3*iSh];
           ryi = rx_shared[3*maxP*threadIdx.x + 3*iSh+1];
           rzi = rx_shared[3*maxP*threadIdx.x + 3*iSh+2];
@@ -90,7 +96,7 @@ __global__ void force (int maxP, float *potentialArray, float *virialArray, floa
             if ((rijsq < rcutsq) && (j!=i)) 
             {
                     //START FORCE IJ
-	               //force_ij(rijsq, rxij, ryij, rzij, sigsq, vrcut, dvrc12, rcut, dvrcut, &vij, &wij, &fxij, &fyij, &fzij);
+                 //force_ij(rijsq, rxij, ryij, rzij, sigsq, vrcut, dvrc12, rcut, dvrcut, &vij, &wij, &fxij, &fyij, &fzij);
                 
               rij = (float) sqrt ((double)rijsq);
               sr2 = sigsq/rijsq;
@@ -101,11 +107,11 @@ __global__ void force (int maxP, float *potentialArray, float *virialArray, floa
               fxij = fij*rxij;
               fyij = fij*ryij;
               fzij = fij*rzij;
-		          //END FORCE IJ
+              //END FORCE IJ
               vij *= 0.5;
-		          wij *= 0.5;
-		          valp += vij;
-		          valv += wij;
+              wij *= 0.5;
+              valp += vij;
+              valv += wij;
 //                       potential += 0.5*vij;
 //                       virial    += 0.5*wij;
               fxi+= fxij;
@@ -115,9 +121,8 @@ __global__ void force (int maxP, float *potentialArray, float *virialArray, floa
             j = list[j];
             jTemp+=1;
           }
-	       
-//	      printf("\nCell %d at (%d,%d,%d) interacts with cells: ",icell,xi,yi,zi);
-          offset = 3*BLOCK_SIZE*maxP;
+          
+          //	      printf("\nCell %d at (%d,%d,%d) interacts with cells: ",icell,xi,yi,zi);
           for (ix=-1;ix<=1;ix++)
             for (jx=-1;jx<=1;jx++)
               for (kx=-1;kx<=1;kx++)
@@ -129,78 +134,91 @@ __global__ void force (int maxP, float *potentialArray, float *virialArray, floa
 			//       printf("%d (%d,%d,%d); ",jcell,xcell,ycell,zcell);
 		            if(element!=jcell) 
                 {
-                  j = head[jcell];
-                  //SHARED MEMORY STARTS
-
-                  jSh = 0;
-                  
-                  while (j >= 0)
+                  if ( (jcell < ((blockIdx.x+1) * blockDim.x)) && (jcell >= ((blockIdx.x) * blockDim.x)))
                   {
-                    rx_shared[offset+3*maxP*threadIdx.x + 3*jSh] = rx[j];
-                    rx_shared[offset+3*maxP*threadIdx.x + 3*jSh+1] = ry[j];
-                    rx_shared[offset+3*maxP*threadIdx.x + 3*jSh+2] = rz[j];
-                    j = list[j];
-                    
-                    jSh+=1;
-                  }
-                  jSh = 0;
-                  j = head[jcell];
-
-
-                  //SHARED MEMORY ENDS              
-                  while (j>=0) 
-                  {
-                    rxij = rxi - rx_shared[offset+3*maxP*threadIdx.x + 3*jSh];
-                    ryij = ryi - rx_shared[offset+3*maxP*threadIdx.x + 3*jSh+1];
-                    rzij = rzi - rx_shared[offset+3*maxP*threadIdx.x + 3*jSh+2];
-//                    rxij = rxi - rx[j];
- //                   ryij = ryi - ry[j];
-  //                  rzij = rzi - rz[j];
-                    rijsq = rxij*rxij + ryij*ryij + rzij*rzij;
-                    if (rijsq < rcutsq) 
+                    j = head[jcell];
+                    jSh = 0;
+                    jcell = jcell % blockDim.x;
+                    while (j>=0) 
                     {
-                      //START FORCE IJ
-                      rij = (float) sqrt ((double)rijsq);
-                      sr2 = sigsq/rijsq;
-                      sr6 = sr2*sr2*sr2;
-                      vij = __fadd_rn(__fadd_rn(__fmul_rn(sr6, __fadd_rn(sr6,-1.0)), -vrcut), __fmul_rn(-dvrc12, __fadd_rn(rij, -rcut)));
-                      wij = __fadd_rn(__fmul_rn(sr6, __fadd_rn(sr6, -0.5)), __fmul_rn(dvrcut, rij));
-                      fij = wij/rijsq;
-                      fxij = fij*rxij;
-                      fyij = fij*ryij;
-                      fzij = fij*rzij;
-                      //END FORCE IJ
-                      wij *= 0.5;
-                      vij *= 0.5;
-				              valp += vij;
-				              valv += wij;
-                      fxi += fxij;
-                      fyi += fyij;
-                      fzi += fzij;
+                      rxij = rxi - rx_shared[3*maxP*jcell + 3*jSh];
+                      ryij = ryi - rx_shared[3*maxP*jcell + 3*jSh+1];
+                      rzij = rzi - rx_shared[3*maxP*jcell + 3*jSh+2];
+                      rijsq = rxij*rxij + ryij*ryij + rzij*rzij;
+                      if (rijsq < rcutsq) 
+                      {
+                        //START FORCE IJ
+                        rij = (float) sqrt ((double)rijsq);
+                        sr2 = sigsq/rijsq;
+                        sr6 = sr2*sr2*sr2;
+                        vij = __fadd_rn(__fadd_rn(__fmul_rn(sr6, __fadd_rn(sr6,-1.0)), -vrcut), __fmul_rn(-dvrc12, __fadd_rn(rij, -rcut)));
+                        wij = __fadd_rn(__fmul_rn(sr6, __fadd_rn(sr6, -0.5)), __fmul_rn(dvrcut, rij));
+                        fij = wij/rijsq;
+                        fxij = fij*rxij;
+                        fyij = fij*ryij;
+                        fzij = fij*rzij;
+                        //END FORCE IJ
+                        wij *= 0.5;
+                        vij *= 0.5;
+                        valp += vij;
+                        valv += wij;
+                        fxi += fxij;
+                        fyi += fyij;
+                        fzi += fzij;
+                      }
+                      j = list[j];
+                      jSh+=1;
                     }
-                    //j = list[j];
-                    j = list[j];
-                    jSh+=1;
-			            }
+
+                  }
+                  else
+                  {
+                    j = head[jcell];
+                    while (j>=0) 
+                    {
+                      rxij = rxi - rx[j];
+                      ryij = ryi - ry[j];
+                      rzij = rzi - rz[j];
+                      rijsq = rxij*rxij + ryij*ryij + rzij*rzij;
+                      if (rijsq < rcutsq) 
+                      {
+                        //START FORCE IJ
+                        rij = (float) sqrt ((double)rijsq);
+                        sr2 = sigsq/rijsq;
+                        sr6 = sr2*sr2*sr2;
+                        vij = __fadd_rn(__fadd_rn(__fmul_rn(sr6, __fadd_rn(sr6,-1.0)), -vrcut), __fmul_rn(-dvrc12, __fadd_rn(rij, -rcut)));
+                        wij = __fadd_rn(__fmul_rn(sr6, __fadd_rn(sr6, -0.5)), __fmul_rn(dvrcut, rij));
+                        fij = wij/rijsq;
+                        fxij = fij*rxij;
+                        fyij = fij*ryij;  
+                        fzij = fij*rzij;
+                        //END FORCE IJ
+                        wij *= 0.5;
+                        vij *= 0.5;
+  				              valp += vij;
+  				              valv += wij;
+                        fxi += fxij;
+                        fyi += fyij;
+                        fzi += fzij;
+                      }
+                      j = list[j];
+  			            }
+                  }
                 }		          
               }  
-         // printf("I get here\n");
           *(fx+i) = 48.0*fxi;
           *(fy+i) = 48.0*fyi;
           *(fz+i) = 48.0*fzi;
-          i = list[i]; 
-          iSh+=1; 
+          i = list[i];  
+          iSh+=1;
           //printf("valp: %f from element: %d\n", valp, element);
 	        potential += valp;
 	        virial += valv;
 	        valp = valv = 0.0;           
 	      }//While loop (current cell under consideration)
       }//if statement checking that cell's coordinates are within range
-     // printf("I get here\n");
-     // printf("potential: %f\n", potential);
-     // printf("virial: %f\n", virial);
-        potentialArray[element] = potential;
-        virialArray[element] = virial;
+    potentialArray[element] = potential;
+    virialArray[element] = virial;
     }
 
     //if statement over all cells

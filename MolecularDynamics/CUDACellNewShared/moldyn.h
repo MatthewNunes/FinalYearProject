@@ -32,7 +32,8 @@ extern void set_nearest_cells (int *map, int *mx, int *my, int *mz);
 extern void initialise_particles (float rx[], float ry[], float rz[], float vx[], float vy[], float vz[], int nc);
 extern void pseudorand(int *is, float *c);
 extern void loop_initialise(float *ace, float *acv, float *ack, float *acp, float *acesq, float *acvsq, float *acksq, float *acpsq, float sigma, float rcut, float dt);
-__global__ void force (int maxP, float *potentialArray, float *virialArray, float *pval, float *vval, float *rx, float *ry, float *rz, float *fx, float *fy, float *fz, float sigma, float rcut, float vrcut, float dvrc12, float dvrcut, int *head, int *list, int *map, int mx, int my, int mz, int natoms);
+extern int maxParticles(int *head, int *list, int mx, int my, int mz);
+__global__ void force (int maxP, float *potentialArray, float *virialArray, float *pval, float *vval, float *rx, float *ry, float *rz, float *fx, float *fy, float *fz, float sigma, float rcut, float vrcut, float dvrc12, float dvrcut, int *head, int *list, int mx, int my, int mz);
 extern void movout (float *rx, float *ry, float *rz, float *vx, float *vy, float *vz, float sfx, float sfy, float sfz, int *head, int *list, int mx, int my, int mz, int natoms);
 extern void movea (float *rx, float *ry, float *rz, float *vx, float *vy, float *vz, float *fx, float *fy, float *fz, float dt, int natm);
 extern void moveb (float *kinetic, float *vx, float *vy, float *vz, float *fx, float *fy, float *fz, float dt, int natoms);
@@ -42,4 +43,3 @@ extern void tidyup (float ace, float ack, float acv, float acp, float acesq, flo
 extern void check_cells(float *rx, float *ry, float *rz, int *head, int *list, int mx, int my, int mz, int natoms, int step, int pstep);
 extern void output_particles(float *rx, float *ry, float *rz, float *vx, float *vy, float *vz, float *fx, float *fy, float *fz,  int natm);
 extern void force_ij(float rijsq, float rxij, float ryij, float rzij, float sigsq, float vrcut, float dvrc12, float rcut, float dvrcut, float *vij, float *wij, float *fxij, float *fyij, float *fzij);
-extern int maxParticles(int *head, int *list, int mx, int my, int mz);

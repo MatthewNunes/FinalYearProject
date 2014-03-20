@@ -55,7 +55,7 @@ int read_input (float *sigma, float *rcut, float *dt, float *eqtemp, float *dens
    ierr=scanf  ("%d", nc);
    //*nc = 16;
    natoms = 4*(*nc)*(*nc)*(*nc);
-  
+
    printf ("\n NUMBER OF ATOMS BEING USED %8d", natoms);
 
    *sigma = pow ((*dens)/(float)natoms, 1.0/3.0);

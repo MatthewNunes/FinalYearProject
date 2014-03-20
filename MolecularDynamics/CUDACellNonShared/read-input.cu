@@ -17,30 +17,23 @@ int read_input (float *sigma, float *rcut, float *dt, float *eqtemp, float *dens
       
    printf ("\n ENTER NUMBER OF TIME STEPS");
    ierr=scanf  ("%d", nstep);
-   //*nstep = 1000;
    printf ("\n ENTER NUMBER OF EQUILIBRATION TIME STEPS");
    ierr=scanf  ("%d", nequil);
-   //*nequil = 400;
+
    printf ("\n ENTER NUMBER OF STEPS BETWEEN SUMMARY OUTPUT");
    ierr=scanf  ("%d", iprint);
-   //*iprint= 10;
    printf ("\n ENTER NUMBER OF STEPS BETWEEN GLOBAL RESCALES");
    ierr=scanf  ("%d", iscale);
-   //*iscale = 20;
 
    printf ("\n\n ENTER THE FOLLOWING IN LENNARD-JONES UNITS");
    printf ("\n ENTER THE TEMPERATURE");
    ierr=scanf  ("%f", eqtemp);
-   //*eqtemp = 1.4;
    printf ("\n ENTER THE DENSITY");
    ierr=scanf  ("%f", dens);
-   //*dens = .15;
    printf ("\n ENTER THE POTENTIAL CUTOFF DISTANCE");
    ierr=scanf  ("%f", rcut);
-   //*rcut = 2.5;
    printf ("\n ENTER THE TIMESTEP");
    ierr=scanf  ("%f", dt);
-   //*dt = .003;
 
    printf ("\n NUMBER OF STEPS                    %10d",   *nstep);
    printf ("\n NUMBER OF EQUIL STEPS              %10d",   *nequil);
@@ -53,7 +46,7 @@ int read_input (float *sigma, float *rcut, float *dt, float *eqtemp, float *dens
 
    printf ("\n ENTER NC");
    ierr=scanf  ("%d", nc);
-   //*nc = 16;
+
    natoms = 4*(*nc)*(*nc)*(*nc);
   
    printf ("\n NUMBER OF ATOMS BEING USED %8d", natoms);
