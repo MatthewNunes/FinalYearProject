@@ -34,6 +34,8 @@ __global__ void force (int maxP, float *potentialArray, float *virialArray, floa
    int iSh;
    int jTemp;
    int jSh;
+   int iSize;
+  // int jSize;
    
 
    int element = blockDim.x * blockIdx.x + threadIdx.x;
@@ -60,6 +62,7 @@ __global__ void force (int maxP, float *potentialArray, float *virialArray, floa
           iSh+=1;
           
         }
+        iSize = iSh;
     }
     __syncthreads();
 
@@ -74,7 +77,7 @@ __global__ void force (int maxP, float *potentialArray, float *virialArray, floa
         i = head[element];
         iSh = 0;
 
-        while (i>=0) 
+        while (iSh<iSize) 
         {
           rxi = rx_shared[3*maxP*threadIdx.x + 3*iSh];
           ryi = rx_shared[3*maxP*threadIdx.x + 3*iSh+1];
@@ -85,15 +88,15 @@ __global__ void force (int maxP, float *potentialArray, float *virialArray, floa
   //             fzi = fz[i];
           fxi = fyi = fzi = 0.0;
 
-          j = head[element];
+          //j = head[element];
           jTemp = 0;
-          while (j>=0) 
+          while (jTemp<iSize) 
           {
             rxij = rxi - rx_shared[3*maxP*threadIdx.x + 3*jTemp];
             ryij = ryi - rx_shared[3*maxP*threadIdx.x + 3*jTemp+1];
             rzij = rzi - rx_shared[3*maxP*threadIdx.x + 3*jTemp+2];
             rijsq = rxij*rxij + ryij*ryij + rzij*rzij;
-            if ((rijsq < rcutsq) && (j!=i)) 
+            if ((rijsq < rcutsq) && (jTemp!=iSh)) 
             {
                     //START FORCE IJ
                  //force_ij(rijsq, rxij, ryij, rzij, sigsq, vrcut, dvrc12, rcut, dvrcut, &vij, &wij, &fxij, &fyij, &fzij);
@@ -118,7 +121,7 @@ __global__ void force (int maxP, float *potentialArray, float *virialArray, floa
               fyi+= fyij;
               fzi+= fzij;
             }           
-            j = list[j];
+            //j = list[j];
             jTemp+=1;
           }
           

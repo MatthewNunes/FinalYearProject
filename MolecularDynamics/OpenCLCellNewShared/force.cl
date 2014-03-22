@@ -25,6 +25,7 @@ __kernel void force (__local float *rx_shared, __private int maxP, __global floa
    __private int iSh;
    __private int jTemp;
    __private int jSh;
+   __private int iSize;
    
 
    __private int element = get_global_id(0);
@@ -51,6 +52,7 @@ __kernel void force (__local float *rx_shared, __private int maxP, __global floa
           iSh+=1;
           
         }
+        iSize = iSh;
     }
     barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
 
@@ -65,7 +67,7 @@ __kernel void force (__local float *rx_shared, __private int maxP, __global floa
         i = head[element];
         iSh = 0;
 
-        while (i>=0) 
+        while (iSh<iSize) 
         {
           rxi = rx_shared[3*maxP*get_local_id(0) + 3*iSh];
           ryi = rx_shared[3*maxP*get_local_id(0) + 3*iSh+1];
@@ -76,15 +78,15 @@ __kernel void force (__local float *rx_shared, __private int maxP, __global floa
   //             fzi = fz[i];
           fxi = fyi = fzi = 0.0;
 
-          j = head[element];
+          //j = head[element];
           jTemp = 0;
-          while (j>=0) 
+          while (jTemp<iSize) 
           {
             rxij = rxi - rx_shared[3*maxP*get_local_id(0) + 3*jTemp];
             ryij = ryi - rx_shared[3*maxP*get_local_id(0) + 3*jTemp+1];
             rzij = rzi - rx_shared[3*maxP*get_local_id(0) + 3*jTemp+2];
             rijsq = rxij*rxij + ryij*ryij + rzij*rzij;
-            if ((rijsq < rcutsq) && (j!=i)) 
+            if ((rijsq < rcutsq) && (jTemp!=iSh)) 
             {
                     //START FORCE IJ
                  //force_ij(rijsq, rxij, ryij, rzij, sigsq, vrcut, dvrc12, rcut, dvrcut, &vij, &wij, &fxij, &fyij, &fzij);
@@ -109,7 +111,7 @@ __kernel void force (__local float *rx_shared, __private int maxP, __global floa
               fyi+= fyij;
               fzi+= fzij;
             }           
-            j = list[j];
+            //j = list[j];
             jTemp+=1;
           }
           
