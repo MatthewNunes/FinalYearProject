@@ -1,0 +1,185 @@
+	.version 1.4
+	.target sm_10, map_f64_to_f32
+	// compiled with /usr/local/cuda/open64/lib//be
+	// nvopencc 4.0 built on 2011-05-12
+
+	//-----------------------------------------------------------
+	// Compiling /tmp/tmpxft_00006e40_00000000-9_laplaceCUDA.cpp3.i (/tmp/ccBI#.D7qnoc)
+	//-----------------------------------------------------------
+
+	//-----------------------------------------------------------
+	// Options:
+	//-----------------------------------------------------------
+	//  Target:ptx, ISA:sm_10, Endian:little, Pointer Size:64
+	//  -O3	(Optimization level)
+	//  -g0	(Debug level)
+	//  -m2	(Report advisories)
+	//-----------------------------------------------------------
+
+	.file	1	"<command-line>"
+	.file	2	"/tmp/tmpxft_00006e40_00000000-8_laplaceCUDA.cudafe2.gpu"
+	.file	3	"/usr/lib/gcc/x86_64-linux-gnu/4.4.5/include/stddef.h"
+	.file	4	"/usr/local/cuda/bin/../include/crt/device_runtime.h"
+	.file	5	"/usr/local/cuda/bin/../include/host_defines.h"
+	.file	6	"/usr/local/cuda/bin/../include/builtin_types.h"
+	.file	7	"/usr/local/cuda/bin/../include/device_types.h"
+	.file	8	"/usr/local/cuda/bin/../include/driver_types.h"
+	.file	9	"/usr/local/cuda/bin/../include/surface_types.h"
+	.file	10	"/usr/local/cuda/bin/../include/texture_types.h"
+	.file	11	"/usr/local/cuda/bin/../include/vector_types.h"
+	.file	12	"/usr/local/cuda/bin/../include/device_launch_parameters.h"
+	.file	13	"/usr/local/cuda/bin/../include/crt/storage_class.h"
+	.file	14	"/usr/include/bits/types.h"
+	.file	15	"/usr/include/time.h"
+	.file	16	"laplaceCUDA.cu"
+	.file	17	"/usr/local/cuda/bin/../include/common_functions.h"
+	.file	18	"/usr/local/cuda/bin/../include/math_functions.h"
+	.file	19	"/usr/local/cuda/bin/../include/math_constants.h"
+	.file	20	"/usr/local/cuda/bin/../include/device_functions.h"
+	.file	21	"/usr/local/cuda/bin/../include/sm_11_atomic_functions.h"
+	.file	22	"/usr/local/cuda/bin/../include/sm_12_atomic_functions.h"
+	.file	23	"/usr/local/cuda/bin/../include/sm_13_double_functions.h"
+	.file	24	"/usr/local/cuda/bin/../include/sm_20_atomic_functions.h"
+	.file	25	"/usr/local/cuda/bin/../include/sm_20_intrinsics.h"
+	.file	26	"/usr/local/cuda/bin/../include/surface_functions.h"
+	.file	27	"/usr/local/cuda/bin/../include/texture_fetch_functions.h"
+	.file	28	"/usr/local/cuda/bin/../include/math_functions_dbl_ptx1.h"
+
+
+	.entry _Z20performUpdatesKernelPfS_Piii (
+		.param .u64 __cudaparm__Z20performUpdatesKernelPfS_Piii_d_phi,
+		.param .u64 __cudaparm__Z20performUpdatesKernelPfS_Piii_d_oldphi,
+		.param .u64 __cudaparm__Z20performUpdatesKernelPfS_Piii_d_mask,
+		.param .s32 __cudaparm__Z20performUpdatesKernelPfS_Piii_nptsx,
+		.param .s32 __cudaparm__Z20performUpdatesKernelPfS_Piii_nptsy)
+	{
+	.reg .u16 %rh<6>;
+	.reg .u32 %r<22>;
+	.reg .u64 %rd<16>;
+	.reg .f32 %f<11>;
+	.reg .pred %p<4>;
+	.loc	16	13	0
+$LDWbegin__Z20performUpdatesKernelPfS_Piii:
+	mov.u16 	%rh1, %ctaid.x;
+	mov.u16 	%rh2, %ntid.x;
+	mul.wide.u16 	%r1, %rh1, %rh2;
+	mov.u16 	%rh3, %ctaid.y;
+	mov.u16 	%rh4, %ntid.y;
+	mul.wide.u16 	%r2, %rh3, %rh4;
+	cvt.u32.u16 	%r3, %tid.x;
+	add.u32 	%r4, %r3, %r1;
+	cvt.u32.u16 	%r5, %tid.y;
+	add.u32 	%r6, %r5, %r2;
+	ld.param.s32 	%r7, [__cudaparm__Z20performUpdatesKernelPfS_Piii_nptsx];
+	ld.param.s32 	%r8, [__cudaparm__Z20performUpdatesKernelPfS_Piii_nptsy];
+	set.gt.u32.s32 	%r9, %r8, %r6;
+	neg.s32 	%r10, %r9;
+	set.gt.u32.s32 	%r11, %r7, %r4;
+	neg.s32 	%r12, %r11;
+	and.b32 	%r13, %r10, %r12;
+	mov.u32 	%r14, 0;
+	setp.eq.s32 	%p1, %r13, %r14;
+	@%p1 bra 	$Lt_0_2050;
+	ld.param.s32 	%r7, [__cudaparm__Z20performUpdatesKernelPfS_Piii_nptsx];
+	mul.lo.s32 	%r15, %r7, %r6;
+	add.s32 	%r16, %r4, %r15;
+	cvt.s64.s32 	%rd1, %r16;
+	mul.wide.s32 	%rd2, %r16, 4;
+	ld.param.u64 	%rd3, [__cudaparm__Z20performUpdatesKernelPfS_Piii_d_mask];
+	add.u64 	%rd4, %rd3, %rd2;
+	ld.global.s32 	%r17, [%rd4+0];
+	mov.u32 	%r18, 0;
+	setp.eq.s32 	%p2, %r17, %r18;
+	@%p2 bra 	$Lt_0_2562;
+	.loc	16	22	0
+	ld.param.u64 	%rd5, [__cudaparm__Z20performUpdatesKernelPfS_Piii_d_oldphi];
+	add.u64 	%rd6, %rd2, %rd5;
+	.loc	16	13	0
+	ld.param.s32 	%r7, [__cudaparm__Z20performUpdatesKernelPfS_Piii_nptsx];
+	.loc	16	22	0
+	sub.s32 	%r19, %r16, %r7;
+	cvt.s64.s32 	%rd7, %r19;
+	mul.wide.s32 	%rd8, %r19, 4;
+	add.u64 	%rd9, %rd5, %rd8;
+	ld.global.f32 	%f1, [%rd9+0];
+	add.s32 	%r20, %r16, %r7;
+	cvt.s64.s32 	%rd10, %r20;
+	mul.wide.s32 	%rd11, %r20, 4;
+	add.u64 	%rd12, %rd5, %rd11;
+	ld.global.f32 	%f2, [%rd12+0];
+	ld.global.f32 	%f3, [%rd6+-4];
+	ld.global.f32 	%f4, [%rd6+4];
+	add.f32 	%f5, %f3, %f4;
+	add.f32 	%f6, %f2, %f5;
+	add.f32 	%f7, %f1, %f6;
+	mov.f32 	%f8, 0f3e800000;     	// 0.25
+	mul.f32 	%f9, %f7, %f8;
+	ld.param.u64 	%rd13, [__cudaparm__Z20performUpdatesKernelPfS_Piii_d_phi];
+	add.u64 	%rd14, %rd13, %rd2;
+	st.global.f32 	[%rd14+0], %f9;
+$Lt_0_2562:
+$Lt_0_2050:
+	.loc	16	23	0
+	exit;
+$LDWend__Z20performUpdatesKernelPfS_Piii:
+	} // _Z20performUpdatesKernelPfS_Piii
+
+	.entry _Z12doCopyKernelPfS_Piii (
+		.param .u64 __cudaparm__Z12doCopyKernelPfS_Piii_d_phi,
+		.param .u64 __cudaparm__Z12doCopyKernelPfS_Piii_d_oldphi,
+		.param .u64 __cudaparm__Z12doCopyKernelPfS_Piii_d_mask,
+		.param .s32 __cudaparm__Z12doCopyKernelPfS_Piii_nptsx,
+		.param .s32 __cudaparm__Z12doCopyKernelPfS_Piii_nptsy)
+	{
+	.reg .u16 %rh<6>;
+	.reg .u32 %r<20>;
+	.reg .u64 %rd<10>;
+	.reg .f32 %f<3>;
+	.reg .pred %p<4>;
+	.loc	16	25	0
+$LDWbegin__Z12doCopyKernelPfS_Piii:
+	mov.u16 	%rh1, %ctaid.x;
+	mov.u16 	%rh2, %ntid.x;
+	mul.wide.u16 	%r1, %rh1, %rh2;
+	mov.u16 	%rh3, %ctaid.y;
+	mov.u16 	%rh4, %ntid.y;
+	mul.wide.u16 	%r2, %rh3, %rh4;
+	cvt.u32.u16 	%r3, %tid.x;
+	add.u32 	%r4, %r3, %r1;
+	cvt.u32.u16 	%r5, %tid.y;
+	add.u32 	%r6, %r5, %r2;
+	ld.param.s32 	%r7, [__cudaparm__Z12doCopyKernelPfS_Piii_nptsx];
+	ld.param.s32 	%r8, [__cudaparm__Z12doCopyKernelPfS_Piii_nptsy];
+	set.gt.u32.s32 	%r9, %r8, %r6;
+	neg.s32 	%r10, %r9;
+	set.gt.u32.s32 	%r11, %r7, %r4;
+	neg.s32 	%r12, %r11;
+	and.b32 	%r13, %r10, %r12;
+	mov.u32 	%r14, 0;
+	setp.eq.s32 	%p1, %r13, %r14;
+	@%p1 bra 	$Lt_1_2050;
+	ld.param.s32 	%r7, [__cudaparm__Z12doCopyKernelPfS_Piii_nptsx];
+	mul.lo.s32 	%r15, %r7, %r6;
+	add.s32 	%r16, %r4, %r15;
+	cvt.s64.s32 	%rd1, %r16;
+	mul.wide.s32 	%rd2, %r16, 4;
+	ld.param.u64 	%rd3, [__cudaparm__Z12doCopyKernelPfS_Piii_d_mask];
+	add.u64 	%rd4, %rd3, %rd2;
+	ld.global.s32 	%r17, [%rd4+0];
+	mov.u32 	%r18, 0;
+	setp.eq.s32 	%p2, %r17, %r18;
+	@%p2 bra 	$Lt_1_2562;
+	.loc	16	32	0
+	ld.param.u64 	%rd5, [__cudaparm__Z12doCopyKernelPfS_Piii_d_phi];
+	add.u64 	%rd6, %rd5, %rd2;
+	ld.global.f32 	%f1, [%rd6+0];
+	ld.param.u64 	%rd7, [__cudaparm__Z12doCopyKernelPfS_Piii_d_oldphi];
+	add.u64 	%rd8, %rd7, %rd2;
+	st.global.f32 	[%rd8+0], %f1;
+$Lt_1_2562:
+$Lt_1_2050:
+	.loc	16	33	0
+	exit;
+$LDWend__Z12doCopyKernelPfS_Piii:
+	} // _Z12doCopyKernelPfS_Piii
+

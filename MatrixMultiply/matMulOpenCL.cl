@@ -17,14 +17,3 @@ __kernel void matMulKernel(__global float *restrict d_M, __global float *restric
 	}
 }
 
-/**
-    int Row = blockIdx.y*blockDim.y + threadIdx.y;
-	int Col = blockIdx.x*blockDim.x + threadIdx.x;
-	int k;
-	if ((Row<Width)&&(Col<Width)){
-		float Pvalue = 0.0;
-		for(k=0;k<Width;k++)
-			Pvalue += d_M[Row*Width+k]*d_N[k*Width+Col];
-		d_P[Row*Width+Col] = Pvalue;
-	}
-*/

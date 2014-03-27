@@ -79,6 +79,7 @@ cl_program build_program(cl_context ctx, cl_device_id dev, const char* filename)
 
    /* Build program */
    err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+   printf(program);
    if(err < 0) {
 
 	  /* Find size of log and print to std output */

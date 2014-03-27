@@ -48,31 +48,16 @@ void matMulDevice(float *h_M, float *h_N, float *h_P, int Width, float *d_check)
    int numBlocks = ceil(Width/(float)BLOCK_WIDTH);
    dim3 dimGrid(numBlocks,numBlocks);
    dim3 dimBlock(BLOCK_WIDTH, BLOCK_WIDTH);
-// Step 3b: Launch the device computation threads!
-  //  cudaEvent_t start, stop;
-  //  cudaEventCreate(&start);
-  //  cudaEventCreate(&stop);
-     
-   //  cudaEventRecord(start, 0);
-   //  gettimeofday(&tim, NULL);
-  //   double t1=tim.tv_sec+(tim.tv_usec/1000000.0);
    long int start = get_tick();
    matMulKernel<<<dimGrid, dimBlock>>>(d_M, d_N, d_P);
    cudaDeviceSynchronize();
    long int end = get_tick();
-  // gettimeofday(&tim, NULL);
-  // double t2=tim.tv_sec+(tim.tv_usec/1000000.0);
- //  cudaEventRecord(stop, 0);
- //  cudaEventSynchronize(stop);
-   //float elapsedTime;
-   //cudaEventElapsedTime(&elapsedTime, start, stop);
-   //elapsedTime = elapsedTime / (float) 1000000;
+
    long double elapsed_time = (end - start)/ (float)1000;
    printf("%Lf seconds elapsed\n", elapsed_time);
 // Step 4: Copy back result, and free memory on device
    CUDA_CHECK_RETURN(cudaMemcpy(h_P, d_P, size, cudaMemcpyDeviceToHost));
    cudaFree(d_M); cudaFree(d_N); cudaFree(d_P);
-   //printf("%.6f seconds elapsed\n", elapsedTime);
 }
 
 int checkP(float *h_P, float *h_PH, int n)
@@ -117,11 +102,5 @@ int main()
         *(h_N+i)=(float)i;
     }
     matMulDevice(h_M,h_N,h_P,n, check);
-    /**
-    float *h_PH = (float *)malloc(size);
-    matMul(h_M,h_N,h_PH,n);
-    int ok = checkP(h_P,h_PH,n);
-    if(ok) printf("Everything worked!\n");
-    else printf("Something went wrong!\n");
-    */
+
 }
