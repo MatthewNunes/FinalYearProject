@@ -1,19 +1,20 @@
 #include "moldyn.h"
 
-void movea (float *rx, float *ry, float *rz, float *vx, float *vy, float *vz, float *fx, float *fy, float *fz, float dt, int natoms)
+__global__ void movea (float *rx, float *ry, float *rz, float *vx, float *vy, float *vz, float *fx, float *fy, float *fz, float dt, int natoms)
 {
    float dt2, dtsq2;
    int i;
-
+   int element = blockDim.x * blockIdx.x + threadIdx.x;
    dt2 = dt*0.5;
    dtsq2 = dt*dt2;
 
-   for(i=0;i<natoms;i++){
-      rx[i] = rx[i] + dt*vx[i] + dtsq2*fx[i];
-      ry[i] = ry[i] + dt*vy[i] + dtsq2*fy[i];
-      rz[i] = rz[i] + dt*vz[i] + dtsq2*fz[i];
-      vx[i] = vx[i] + dt2*fx[i];
-      vy[i] = vy[i] + dt2*fy[i];
-      vz[i] = vz[i] + dt2*fz[i];
+   if (element < natoms)
+   {
+      rx[element] = rx[element] + dt*vx[element] + dtsq2*fx[element];
+      ry[element] = ry[element] + dt*vy[element] + dtsq2*fy[element];
+      rz[element] = rz[element] + dt*vz[element] + dtsq2*fz[element];
+      vx[element] = vx[element] + dt2*fx[element];
+      vy[element] = vy[element] + dt2*fy[element];
+      vz[element] = vz[element] + dt2*fz[element];
    }
 }
