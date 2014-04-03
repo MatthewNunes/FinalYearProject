@@ -13,12 +13,6 @@ void movout (float *rx, float *ry, float *rz, float *vx, float *vy, float *vz, f
  //  printf("\nStarting for loop in movout: mx = %d, my = %d, mz = %d, natoms = %d, sfx = %f, sfy = %f, sfz = %f\n",mx, my, mz, natoms, sfx, sfy, sfz);
    for(i=0;i<natoms;i++){
       //printf("\ni = %d",i);
-      if(rx[i] < -0.5){ rx[i] += 1.0;}
-      if(rx[i] >  0.5){ rx[i] -= 1.0;}
-      if(ry[i] < -0.5){ ry[i] += 1.0;}
-      if(ry[i] >  0.5){ ry[i] -= 1.0;}
-      if(rz[i] < -0.5){ rz[i] += 1.0;}
-      if(rz[i] >  0.5){ rz[i] -= 1.0;}
       if (rx[i]<-0.5 || rx[i] > 0.5) printf("\nrx[%d] = %f",i,rx[i]);
       if (ry[i]<-0.5 || ry[i] > 0.5) printf("\nry[%d] = %f",i,ry[i]);
       if (rz[i]<-0.5 || rz[i] > 0.5) printf("\nrz[%d] = %f",i,rz[i]);

@@ -1,5 +1,5 @@
 #include "moldyn.h"
-
+#include <cuda.h>
 __global__ void movea (float *rx, float *ry, float *rz, float *vx, float *vy, float *vz, float *fx, float *fy, float *fz, float dt, int natoms)
 {
    float dt2, dtsq2;

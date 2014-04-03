@@ -1,4 +1,5 @@
 #include "moldyn.h"
+#include <cuda.h>
 
 __global__ void moveb (float *kineticArray, float *vx, float *vy, float *vz, float *fx, float *fy, float *fz, float dt, int natoms)
 {
@@ -9,18 +10,21 @@ __global__ void moveb (float *kineticArray, float *vx, float *vy, float *vz, flo
    dt2 = dt*0.5;
   // *kinetic = 0.0;
    __shared__ float kineticSum[BLOCK_WIDTH];
-   kineticSum[threadIdx.x] = 0.0
+   kineticSum[threadIdx.x] = 0.0;
    if(element < natoms)
    {
       vx[element] = vx[element] + dt2*fx[element];
       vy[element] = vy[element] + dt2*fy[element];
       vz[element] = vz[element] + dt2*fz[element];
-      kinetic += vx[element]*vx[element] + vy[element]*vy[element] + vz[element]*vz[element];
+      kineticSum[threadIdx.x] += vx[element]*vx[element] + vy[element]*vy[element] + vz[element]*vz[element];
    }
    int stride;
    for (stride = blockDim.x/2; stride > 0; stride >>=1)
    {
-      kineticSum[threadIdx.x] += kineticSum[threadIdx.x + stride];
+      if (threadIdx.x < stride)
+      {
+         kineticSum[threadIdx.x] += kineticSum[threadIdx.x + stride];
+      }
    }
    if (threadIdx.x == 0)
    {   
@@ -28,12 +32,4 @@ __global__ void moveb (float *kineticArray, float *vx, float *vy, float *vz, flo
    }
 }
 
-__global__ void moveb(float *kineticArray, float *kinetic)
-{
-   int stride; 
-   
-   for (stride = blockDim.x/2; stride>0; stride>>=1)
-   {
 
-   }
-}

@@ -1,5 +1,6 @@
 #include "moldyn.h"
 #include <math.h>
+#include <cuda.h>
 
 __global__ void scalet ( float *vx, float *vy, float *vz, float kinetic, float eqtemp, float tmpx, int iscale, int natoms, int step)
 {

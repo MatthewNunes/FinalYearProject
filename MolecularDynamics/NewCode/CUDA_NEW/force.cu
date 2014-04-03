@@ -1,8 +1,9 @@
-#define BLOCK_SIZE 512
 #include <stdio.h>
 #include <cuda.h>
 #include <math.h>
+#include "moldyn.h"
 
+/**
 __constant__ float sigma;
 __constant__ float rcut;
 __constant__ float vrcut;
@@ -17,21 +18,9 @@ __constant__ float sfx;
 __constant__ float sfy;
 __constant__ float sfz;
 
-void copyToConstant(float *sig, float *rcu, float *vrc, float *dvr, float *dvrc, int * m, int *mm, int *mmm, int *nat, int *ste, float *sf, float *sff, float *sfff)
+void copySigma(float *sig)
 {
   cudaMemcpyToSymbol("sigma", sig, sizeof(float));
-  cudaMemcpyToSymbol("rcut", rcu, sizeof(float));
-  cudaMemcpyToSymbol("vrcut", vrc, sizeof(float));
-  cudaMemcpyToSymbol("dvrc12", dvr, sizeof(float));
-  cudaMemcpyToSymbol("dvrcut", dvrc, sizeof(float));
-  cudaMemcpyToSymbol("mx", m, sizeof(int));
-  cudaMemcpyToSymbol("my", mm, sizeof(int));
-  cudaMemcpyToSymbol("mz", mmm, sizeof(int));
-  cudaMemcpyToSymbol("natoms", nat, sizeof(int));
-  cudaMemcpyToSymbol("step", ste, sizeof(int));
-  cudaMemcpyToSymbol("sfx", sf, sizeof(float));
-  cudaMemcpyToSymbol("sfy", sff, sizeof(float));
-  cudaMemcpyToSymbol("sfz", sfff, sizeof(float));
 }
 
 void copyRcut(float *rcu)
@@ -94,10 +83,10 @@ void copySfz(float *sfff)
   cudaMemcpyToSymbol("sfz", sfff, sizeof(float));
 }
 
-
+*/
 
 __global__ 
-void force (float *virialArray, float *potentialArray, float *pval, float *vval, float *rx, float *ry, float *rz, float *fx, float *fy, float *fz, int *head, int *list)
+void force (float *virialArray, float *potentialArray, float *rx, float *ry, float *rz, float *fx, float *fy, float *fz, float sigma, float rcut, float vrcut, float dvrc12, float dvrcut, int *head, int *list, int mx, int my, int mz, int natoms, float sfx, float sfy, float sfz)
 {
    int element = blockIdx.x * blockDim.x + threadIdx.x;
    /**
@@ -114,8 +103,8 @@ void force (float *virialArray, float *potentialArray, float *pval, float *vval,
    int j, jcell;
    float potential, virial;
    int xi, yi, zi, ix, jx, kx, xcell, ycell, zcell;
-   __shared__ float vArray[BLOCK_SIZE];
-   __shared__ float pArray[BLOCK_SIZE];
+   __shared__ float vArray[BLOCK_WIDTH];
+   __shared__ float pArray[BLOCK_WIDTH];
    sigsq  = __fmul_rn(sigma, sigma);
    rcutsq = __fmul_rn(rcut,rcut);
    potential = (float)0.0;
@@ -124,9 +113,9 @@ void force (float *virialArray, float *potentialArray, float *pval, float *vval,
    pArray[threadIdx.x] = (float)0.0;
    if (element < natoms)
    {
-  	 rxi = rx[element];
-  	 ryi = ry[element];
-  	 rzi = rz[element];
+     rxi = rx[element];
+     ryi = ry[element];
+     rzi = rz[element];
      /**
      if (element == (natoms - 1))
      {
@@ -136,16 +125,16 @@ void force (float *virialArray, float *potentialArray, float *pval, float *vval,
      }
      */
      
-  	 fxi = (float)0.0;
-  	 fyi = (float)0.0;
-  	 fzi = (float)0.0;
+     fxi = (float)0.0;
+     fyi = (float)0.0;
+     fzi = (float)0.0;
      //(int)((rxi+0.5)/sfx) + 1;
      //
      xi = (int)( (rxi + (float)0.5) / sfx);
      xi += 1;
-  	 yi = (int)( (ryi + (float)0.5) / sfy);
+     yi = (int)( (ryi + (float)0.5) / sfy);
      yi += 1;
-  	 zi = (int)( (rzi + (float)0.5) / sfz);
+     zi = (int)( (rzi + (float)0.5) / sfz);
      zi += 1;
      
      /**
@@ -201,20 +190,20 @@ void force (float *virialArray, float *potentialArray, float *pval, float *vval,
      */
 
      
-  //	 if (xi<0 || xi> mx) printf("\nxi = %d\n",xi);
-  //	 if (yi<0 || yi> my) printf("\nyi = %d\n",yi);
-  //	 if (zi<0 || zi> mz) printf("\nzi = %d\n",zi);
-  //	 if(icell<0||icell>(mx+2)*(my+2)*(mz+2)-1) printf("\nicell = %d\n",icell);
-  //	if(step==92&&i==4680){ printf("Particle %5d, (xi,yi,zi) = %d,%d,%d, icell = %5d\n",i,xi,yi,zi,icell);
-  //		printf("rx = %f, ry = %f, rz = %f\n",rxi,ryi,rzi);
-  //		fflush(stdout);
-  //	}
+  //   if (xi<0 || xi> mx) printf("\nxi = %d\n",xi);
+  //   if (yi<0 || yi> my) printf("\nyi = %d\n",yi);
+  //   if (zi<0 || zi> mz) printf("\nzi = %d\n",zi);
+  //   if(icell<0||icell>(mx+2)*(my+2)*(mz+2)-1) printf("\nicell = %d\n",icell);
+  //  if(step==92&&i==4680){ printf("Particle %5d, (xi,yi,zi) = %d,%d,%d, icell = %5d\n",i,xi,yi,zi,icell);
+  //    printf("rx = %f, ry = %f, rz = %f\n",rxi,ryi,rzi);
+  //    fflush(stdout);
+  //  }
            for (ix=-1;ix<=1;ix++)
                for (jx=-1;jx<=1;jx++)
                    for (kx=-1;kx<=1;kx++){
-  		     xcell = ix+xi;
-  		     ycell = jx+yi;
-  		     zcell = kx+zi;
+           xcell = ix+xi;
+           ycell = jx+yi;
+           zcell = kx+zi;
           /**   
           if (element == (natoms - 1))
           {
@@ -245,7 +234,7 @@ void force (float *virialArray, float *potentialArray, float *pval, float *vval,
                       }
                       */
                       
-  //	printf("%d (%d,%d,%d); ",jcell,xcell,ycell,zcell);
+  //  printf("%d (%d,%d,%d); ",jcell,xcell,ycell,zcell);
                        j = head[jcell];
                        /**
                        if (element == (natoms - 1))
@@ -253,10 +242,10 @@ void force (float *virialArray, float *potentialArray, float *pval, float *vval,
                           printf("%d: j=%d\n",element, j);              
                        }
                        */
-  //	 if(jcell<0||jcell>(mx+2)*(my+2)*(mz+2)-1) printf("\njcell = %d\n",jcell);
+  //   if(jcell<0||jcell>(mx+2)*(my+2)*(mz+2)-1) printf("\njcell = %d\n",jcell);
                        while (j>=0) 
                        {
-  //			 if(j<0 || j>ntot-1) printf("\nj = %d\n",j);
+  //       if(j<0 || j>ntot-1) printf("\nj = %d\n",j);
                            if (j!=element) 
                            {
                                rxij = __fadd_rn(rxi, -rx[j]);
@@ -290,7 +279,7 @@ void force (float *virialArray, float *potentialArray, float *pval, float *vval,
                                
                                if (rijsq < rcutsq) 
                                {
-  			                           //START FORCE_IJ
+                                   //START FORCE_IJ
                                     
                                     rij = __fsqrt_rn(rijsq);
                                     sr2 = __fdiv_rn(sigsq,rijsq);
@@ -340,7 +329,7 @@ void force (float *virialArray, float *potentialArray, float *pval, float *vval,
                                   }
                                   */
                                }
-  			                    }
+                            }
                            j = list[j];
                            /**
                            if (element == (natoms - 1))
@@ -349,7 +338,7 @@ void force (float *virialArray, float *potentialArray, float *pval, float *vval,
                            }
                            */
                         }
-  	         }
+             }
            *(fx+element) = __fmul_rn((float)48.0, fxi);
            *(fy+element) = __fmul_rn((float)48.0, fyi);
            *(fz+element) = __fmul_rn((float)48.0, fzi);
