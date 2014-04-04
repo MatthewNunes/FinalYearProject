@@ -32,6 +32,8 @@ void hloop (float kinetic, int step, float vg, float wg, float kg, float freex, 
    if (nequil > step) 
    {
       scalet<<<numBlocks, block_width>>> (d_vx, d_vy, d_vz, kinetic, eqtemp, *tmpx, iscale, natoms, step);
+      CUDA_CHECK_RETURN(cudaPeekAtLastError());
+      CUDA_CHECK_RETURN(cudaDeviceSynchronize());
       //CUDA_CHECK_RETURN(cudaMemcpy(tmpx, d_tmpx, sizeof(float), cudaMemcpyDeviceToHost));
    }
 /* Optionally print information */

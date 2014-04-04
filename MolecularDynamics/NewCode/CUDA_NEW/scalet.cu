@@ -4,7 +4,6 @@
 
 __global__ void scalet ( float *vx, float *vy, float *vz, float kinetic, float eqtemp, float tmpx, int iscale, int natoms, int step)
 {
-   int i;
    int element = blockIdx.x * blockDim.x + threadIdx.x;
    float scalef;
 

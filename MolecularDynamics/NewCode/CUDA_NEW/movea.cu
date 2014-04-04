@@ -3,7 +3,6 @@
 __global__ void movea (float *rx, float *ry, float *rz, float *vx, float *vy, float *vz, float *fx, float *fy, float *fz, float dt, int natoms)
 {
    float dt2, dtsq2;
-   int i;
    int element = blockDim.x * blockIdx.x + threadIdx.x;
    dt2 = dt*0.5;
    dtsq2 = dt*dt2;

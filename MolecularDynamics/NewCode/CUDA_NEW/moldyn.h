@@ -24,14 +24,14 @@
 #define OP4 (3*OPSIZ)
 #define OP5 (4*OPSIZ)
 #define OP6 (5*OPSIZ)
-#define BLOCK_WIDTH 64
+#define BLOCK_WIDTH 512
 __global__ void scalet ( float *vx, float *vy, float *vz, float kinetic, float eqtemp, float tmpx, int iscale, int natoms, int step);
 extern int input_parameters (float *sigma, float *rcut, float *dt, float *eqtemp, float *dens, float *boxlx, float *boxly, float *boxlz, float *sfx, float *sfy, float *sfz, float *sr6, float *vrcut, float *dvrcut, float *dvrc12, float *freex, int *nstep, int *nequil, int *iscale, int *nc, int *natoms, int *mx, int *my, int *mz, int *iprint);
 extern int read_input (float *sigma, float *rcut, float *dt, float *eqtemp, float *dens, int *nstep, int *nequil, int *iscale, int *iprint, int *nc);
 extern void initialise_particles (float rx[], float ry[], float rz[], float vx[], float vy[], float vz[], int nc);
 extern void pseudorand(int *is, float *c);
 extern void loop_initialise(float *ace, float *acv, float *ack, float *acp, float *acesq, float *acvsq, float *acksq, float *acpsq, float sigma, float rcut, float dt);
-__global__ void intialMovout(float *rx, float *ry, float *rz, int natoms);
+__global__ void initialMovout(float *rx, float *ry, float *rz, int natoms);
 extern void copyToConstant(float *sig, float *rcu, float *vrc, float *dvr, float *dvrc, int * m, int *mm, int *mmm, int *nat, int *ste, float *sf, float *sff, float *sfff);
 extern void copyRcut(float *rcu);
 extern void copyVrcut(float *vrc);
@@ -46,7 +46,7 @@ extern void copySfx(float *sf);
 extern void copySfy(float *sff);
 extern void copySfz(float *sfff);
 //__global__ void force (float *virialArray, float *potentialArray, float *pval, float *vval, float *rx, float *ry, float *rz, float *fx, float *fy, float *fz, int *head, int *list);
-__global__ void force (float *virialArray, float *potentialArray, float *rx, float *ry, float *rz, float *fx, float *fy, float *fz, float sigma, float rcut, float vrcut, float dvrc12, float dvrcut, int *head, int *list, int mx, int my, int mz, int natoms, float sfx, float sfy, float sfz);
+__global__ void force(float *virialArray, float *potentialArray, float *rx, float *ry, float *rz, float *fx, float *fy, float *fz, float sigma, float rcut, float vrcut, float dvrc12, float dvrcut, int *head, int *list, int mx, int my, int mz, int natoms, float sfx, float sfy, float sfz);
 extern void movout (float *rx, float *ry, float *rz, float *vx, float *vy, float *vz, float sfx, float sfy, float sfz, int *head, int *list, int mx, int my, int mz, int natoms);
 __global__ void movea (float *rx, float *ry, float *rz, float *vx, float *vy, float *vz, float *fx, float *fy, float *fz, float dt, int natoms);
 __global__ void moveb (float *kineticArray, float *vx, float *vy, float *vz, float *fx, float *fy, float *fz, float dt, int natoms);

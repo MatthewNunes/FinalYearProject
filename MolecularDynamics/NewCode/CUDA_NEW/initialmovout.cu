@@ -1,6 +1,6 @@
 #include "moldyn.h"
 #include <cuda.h> 
-__global__ void intialMovout(rx, ry, rz, natoms)
+__global__ void initialMovout(float *rx, float *ry, float *rz, int natoms)
 {
    int element = blockDim.x * blockIdx.x + threadIdx.x;
    if(element < natoms)

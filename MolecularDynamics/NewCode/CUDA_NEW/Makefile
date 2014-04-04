@@ -9,7 +9,7 @@ SUFFIX = cu
 PROGRAM = moldyn
 
 SRCS  = main.cu    input-parameters.cu read-input.cu \
-        initialise-particles.cu pseudorand.cu loop-initialise.cu force.cu movout.cu \
+        initialise-particles.cu pseudorand.cu loop-initialise.cu force.cu initialMovout.cu movout.cu \
         movea.cu moveb.cu sum-energies.cu hloop.cu scalet.cu tidyup.cu check_cells.cu output_particles.cu force_ij.cu
 
 ### End User configurable options ###

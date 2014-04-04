@@ -4,9 +4,7 @@
 __global__ void moveb (float *kineticArray, float *vx, float *vy, float *vz, float *fx, float *fy, float *fz, float dt, int natoms)
 {
    float dt2;
-   int i;
    int element = blockDim.x * blockIdx.x + threadIdx.x;
-   float privateKinetic = 0.0;
    dt2 = dt*0.5;
   // *kinetic = 0.0;
    __shared__ float kineticSum[BLOCK_WIDTH];
@@ -21,11 +19,13 @@ __global__ void moveb (float *kineticArray, float *vx, float *vy, float *vz, flo
    int stride;
    for (stride = blockDim.x/2; stride > 0; stride >>=1)
    {
+      __syncthreads();
       if (threadIdx.x < stride)
       {
          kineticSum[threadIdx.x] += kineticSum[threadIdx.x + stride];
       }
    }
+   __syncthreads();
    if (threadIdx.x == 0)
    {   
       kineticArray[blockIdx.x] = kineticSum[0];
