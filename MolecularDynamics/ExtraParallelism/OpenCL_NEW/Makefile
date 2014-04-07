@@ -1,16 +1,16 @@
 
-MAKER         = gcc
+MAKER         = nvcc
 OPTFLAGS    = -O
 DEBUG       = 
-LIB_LIST    = -lm -lrt
+LIB_LIST    = -lm -lOpenCL
 
 SUFFIX = c
 
 PROGRAM = moldyn
 
 SRCS  = main.c    input-parameters.c read-input.c \
-        initialise-particles.c pseudorand.c loop-initialise.c force.c movout.c \
-        movea.c moveb.c sum-energies.c hloop.c scalet.c tidyup.c check_cells.c output_particles.c force_ij.c
+        initialise-particles.c pseudorand.c loop-initialise.c movout.c \
+        sum-energies.c hloop.c tidyup.c check_cells.c output_particles.c force_ij.c
 
 ### End User configurable options ###
 

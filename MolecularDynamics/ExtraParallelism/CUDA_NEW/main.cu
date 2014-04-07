@@ -94,7 +94,8 @@ int main ( int argc, char *argv[])
    CUDA_CHECK_RETURN(cudaMemcpy(d_ry, ry, sizeof(float) * natoms * 2, cudaMemcpyHostToDevice));
    CUDA_CHECK_RETURN(cudaMemcpy(d_rz, rz, sizeof(float) * natoms * 2, cudaMemcpyHostToDevice));
    
-   initialMovout<<<numBlocks, BLOCK_WIDTH>>>(d_rx, d_ry, d_rz, natoms);
+   int numBlocks2 = ceil(natoms/(float)(BLOCK_WIDTH2));
+   initialMovout<<<numBlocks2, BLOCK_WIDTH2>>>(d_rx, d_ry, d_rz, natoms);
    CUDA_CHECK_RETURN(cudaPeekAtLastError());
    CUDA_CHECK_RETURN(cudaDeviceSynchronize());
    CUDA_CHECK_RETURN(cudaMemcpy(rx, d_rx, sizeof(float) * natoms, cudaMemcpyDeviceToHost));
@@ -147,7 +148,8 @@ int main ( int argc, char *argv[])
    
    //check_cells(rx, ry, rz, head, list, mx, my, mz, natoms,0,0);
 
-   long double elapsedTime = (float)0;
+   long double elapsedTimeMoving = (float)0;
+   long double elapsedTimeExecuting = (float)0;
    long unsigned int startTime;
    long unsigned int endTime;
    printf("numBlocks: %d\n", numBlocks);
@@ -156,9 +158,10 @@ int main ( int argc, char *argv[])
    //printf("main sigma: %f\n", sigma);
    
    int stepTemp = 0;
+   int numBlocks3 = ceil(natoms/(float) BLOCK_WIDTH3);
    //copyToConstant(&sigma, &rcut, &vrcut, &dvrc12, &dvrcut, &mx, &my, &mz, &natoms, &stepTemp, &sfx, &sfy, &sfz);
    //force<<<numBlocks, BLOCK_WIDTH>>>(d_virialArray, d_potentialArray, d_potential, d_virial, d_rx, d_ry, d_rz, d_fx, d_fy, d_fz, d_head, d_list);
-   force<<<numBlocks, BLOCK_WIDTH>>>(d_virialArray, d_potentialArray, d_rx, d_ry, d_rz, d_fx, d_fy, d_fz, sigma, rcut, vrcut, dvrc12, dvrcut, d_head, d_list, mx, my, mz, natoms, sfx, sfy, sfz);
+   force<<<numBlocks3, BLOCK_WIDTH3>>>(d_virialArray, d_potentialArray, d_rx, d_ry, d_rz, d_fx, d_fy, d_fz, sigma, rcut, vrcut, dvrc12, dvrcut, d_head, d_list, mx, my, mz, natoms, sfx, sfy, sfz);
    //force<<<numBlocks, BLOCK_WIDTH>>>(d_virialArray, d_potentialArray, d_potential, d_virial, d_rx, d_ry, d_rz, d_fx, d_fy, d_fz, sigma, rcut, vrcut, dvrc12, dvrcut, d_head, d_list, mx, my, mz, natoms, sfx, sfy, sfz);
    CUDA_CHECK_RETURN(cudaPeekAtLastError());
    CUDA_CHECK_RETURN(cudaDeviceSynchronize());
@@ -179,34 +182,55 @@ int main ( int argc, char *argv[])
   // printf ("\nReturned from force: potential = %f, virial = %f, kinetic = %f\n",potential, virial, kinetic);
 //   output_particles(rx,ry,rz,vx,vy,vz,fx,fy,fz,0);
 
-   startTime = get_tick();
+   
    for(step=1;step<=nstep;step++){
      // if(step>=85)printf ("\nStarted step %d\n",step);
+      startTime = get_tick();
       movea<<<numBlocks, BLOCK_WIDTH>>>(d_rx, d_ry, d_rz, d_vx, d_vy, d_vz, d_fx, d_fy, d_fz, dt, natoms);
       CUDA_CHECK_RETURN(cudaPeekAtLastError());
       CUDA_CHECK_RETURN(cudaDeviceSynchronize());
-      initialMovout<<<numBlocks, BLOCK_WIDTH>>>(d_rx, d_ry, d_rz, natoms);
+      endTime = get_tick();
+      elapsedTimeExecuting += (endTime - startTime);
+      
+      startTime = get_tick();
+      initialMovout<<<numBlocks2, BLOCK_WIDTH2>>>(d_rx, d_ry, d_rz, natoms);
       CUDA_CHECK_RETURN(cudaPeekAtLastError());
       CUDA_CHECK_RETURN(cudaDeviceSynchronize());
+      endTime = get_tick();
+      elapsedTimeExecuting += (endTime - startTime);
+
+      startTime = get_tick();
       CUDA_CHECK_RETURN(cudaMemcpy(rx, d_rx, sizeof(float) * natoms, cudaMemcpyDeviceToHost));
       CUDA_CHECK_RETURN(cudaMemcpy(ry, d_ry, sizeof(float) * natoms, cudaMemcpyDeviceToHost));
       CUDA_CHECK_RETURN(cudaMemcpy(rz, d_rz, sizeof(float) * natoms, cudaMemcpyDeviceToHost));
+      endTime = get_tick();
+      elapsedTimeMoving += (endTime - startTime);
       movout (rx, ry, rz, vx, vy, vz, sfx, sfy, sfz, head, list, mx, my, mz, natoms);
       
+      startTime = get_tick();
       CUDA_CHECK_RETURN(cudaMemcpy(&d_rx[natoms], &rx[natoms], natoms * sizeof(float), cudaMemcpyHostToDevice));
       CUDA_CHECK_RETURN(cudaMemcpy(&d_ry[natoms], &ry[natoms], natoms * sizeof(float), cudaMemcpyHostToDevice));
       CUDA_CHECK_RETURN(cudaMemcpy(&d_rz[natoms], &rz[natoms], natoms * sizeof(float), cudaMemcpyHostToDevice));
       CUDA_CHECK_RETURN(cudaMemcpy(d_head, head, (mx+2)*(my+2)*(mz+2) * sizeof(int), cudaMemcpyHostToDevice));
       CUDA_CHECK_RETURN(cudaMemcpy(d_list, list, 2*natoms * sizeof(int), cudaMemcpyHostToDevice));
-
+      endTime = get_tick();
+      elapsedTimeMoving += (endTime - startTime);
       //copyToConstant(&sigma, &rcut, &vrcut, &dvrc12, &dvrcut, &mx, &my, &mz, &natoms, &stepTemp, &sfx, &sfy, &sfz);
       //printf("main sigma: %f\n", sigma);
       //force<<<numBlocks, BLOCK_WIDTH>>>(d_virialArray, d_potentialArray, d_potential, d_virial, d_rx, d_ry, d_rz, d_fx, d_fy, d_fz, d_head, d_list);
-      force<<<numBlocks, BLOCK_WIDTH>>>(d_virialArray, d_potentialArray, d_rx, d_ry, d_rz, d_fx, d_fy, d_fz, sigma, rcut, vrcut, dvrc12, dvrcut, d_head, d_list, mx, my, mz, natoms, sfx, sfy, sfz);
+      startTime = get_tick();
+      force<<<numBlocks3, BLOCK_WIDTH3>>>(d_virialArray, d_potentialArray, d_rx, d_ry, d_rz, d_fx, d_fy, d_fz, sigma, rcut, vrcut, dvrc12, dvrcut, d_head, d_list, mx, my, mz, natoms, sfx, sfy, sfz);
       //force<<<numBlocks, BLOCK_WIDTH>>>(d_virialArray, d_potentialArray, d_potential, d_virial, d_rx, d_ry, d_rz, d_fx, d_fy, d_fz, sigma, rcut, vrcut, dvrc12, dvrcut, d_head, d_list, mx, my, mz, natoms, sfx, sfy, sfz);
       CUDA_CHECK_RETURN(cudaPeekAtLastError());
+      CUDA_CHECK_RETURN(cudaDeviceSynchronize());
+      endTime = get_tick();
+      elapsedTimeExecuting += (endTime - startTime);
+
+      startTime = get_tick();
       CUDA_CHECK_RETURN(cudaMemcpy(potentialArrayTemp, d_potentialArray, sizeof(float) * numBlocks, cudaMemcpyDeviceToHost));
       CUDA_CHECK_RETURN(cudaMemcpy(virialArrayTemp, d_virialArray, sizeof(float) * numBlocks, cudaMemcpyDeviceToHost));
+      endTime = get_tick();
+      elapsedTimeMoving += (endTime - startTime);
 
       tempInd = 0;
       virial = 0.0;
@@ -219,8 +243,17 @@ int main ( int argc, char *argv[])
       virial *= 48.0/3.0;
       potential *= 4.0;
       
+      startTime = get_tick();
       moveb<<<numBlocks, BLOCK_WIDTH>>> (d_kineticArray, d_vx, d_vy, d_vz, d_fx, d_fy, d_fz, dt, natoms);
+      CUDA_CHECK_RETURN(cudaPeekAtLastError());
+      CUDA_CHECK_RETURN(cudaDeviceSynchronize());
+      endTime = get_tick();
+      elapsedTimeExecuting += (endTime - startTime);
+
+      startTime = get_tick();
       CUDA_CHECK_RETURN(cudaMemcpy(kineticArray, d_kineticArray, sizeof(float) * numBlocks, cudaMemcpyDeviceToHost));
+      endTime = get_tick();
+      elapsedTimeMoving += (endTime - startTime);
       int sumInd = 0;
       for(sumInd = 1; sumInd < numBlocks; sumInd++)
       {
@@ -233,12 +266,13 @@ int main ( int argc, char *argv[])
       hloop (kinetic, step, vg, wg, kg, freex, dens, sigma, eqtemp, &tmpx, &ace, &acv, &ack, &acp, &acesq, &acvsq, &acksq, &acpsq, vx, vy, vz, iscale, iprint, nequil, natoms, BLOCK_WIDTH, d_vx, d_vy, d_vz);
 
    }
-   endTime = get_tick();
-   elapsedTime = endTime - startTime;
+
 
    tidyup (ace, ack, acv, acp, acesq, acksq, acvsq, acpsq, nstep, nequil);
-   elapsedTime = elapsedTime / (float) 1000;
-   printf("\n%Lf seconds have elapsed\n", elapsedTime);
+   elapsedTimeExecuting = elapsedTimeExecuting / (float) 1000;
+   elapsedTimeMoving = elapsedTimeMoving / (float) 1000;
+   printf("\n%Lf seconds have elapsed executing the kernel\n", elapsedTimeExecuting);
+   printf("\n%Lf seconds have elapsed moving the data\n", elapsedTimeMoving);
    cudaFree(d_fx);
    cudaFree(d_fy);
    cudaFree(d_fz);

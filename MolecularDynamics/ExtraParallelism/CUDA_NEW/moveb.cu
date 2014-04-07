@@ -9,12 +9,21 @@ __global__ void moveb (float *kineticArray, float *vx, float *vy, float *vz, flo
   // *kinetic = 0.0;
    __shared__ float kineticSum[BLOCK_WIDTH];
    kineticSum[threadIdx.x] = 0.0;
+   float vxElement;
+   float vyElement;
+   float vzElement;
    if(element < natoms)
    {
-      vx[element] = vx[element] + dt2*fx[element];
-      vy[element] = vy[element] + dt2*fy[element];
-      vz[element] = vz[element] + dt2*fz[element];
-      kineticSum[threadIdx.x] += vx[element]*vx[element] + vy[element]*vy[element] + vz[element]*vz[element];
+      vxElement = vx[element];
+      vyElement = vy[element];
+      vzElement = vz[element];
+      vxElement = vxElement + dt2*fx[element];
+      vyElement = vyElement + dt2*fy[element];
+      vzElement = vzElement + dt2*fz[element];
+      kineticSum[threadIdx.x] += vxElement*vxElement + vyElement*vyElement + vzElement*vzElement;
+      vx[element] = vxElement;
+      vy[element] = vyElement;
+      vz[element] = vzElement;
    }
    int stride;
    for (stride = blockDim.x/2; stride > 0; stride >>=1)

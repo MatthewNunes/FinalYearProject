@@ -28,10 +28,10 @@ void hloop (float kinetic, int step, float vg, float wg, float kg, float freex, 
 /* If still equilibrating call subroutine to scale velocities */
    //CUDA_CHECK_RETURN(cudaMalloc((void **) &d_tmpx, sizeof(float)));
    //CUDA_CHECK_RETURN(cudaMemcpy(d_tmpx, tmpx, sizeof(float), cudaMemcpyHostToDevice));
-   int numBlocks = ceil(natoms/ (float) block_width);
+   int numBlocks2 = ceil(natoms/ (float) BLOCK_WIDTH2);
    if (nequil > step) 
    {
-      scalet<<<numBlocks, block_width>>> (d_vx, d_vy, d_vz, kinetic, eqtemp, *tmpx, iscale, natoms, step);
+      scalet<<<numBlocks2, BLOCK_WIDTH2>>> (d_vx, d_vy, d_vz, kinetic, eqtemp, *tmpx, iscale, natoms, step);
       CUDA_CHECK_RETURN(cudaPeekAtLastError());
       CUDA_CHECK_RETURN(cudaDeviceSynchronize());
       //CUDA_CHECK_RETURN(cudaMemcpy(tmpx, d_tmpx, sizeof(float), cudaMemcpyDeviceToHost));

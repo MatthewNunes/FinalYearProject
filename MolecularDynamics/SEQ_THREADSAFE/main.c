@@ -20,7 +20,16 @@ HIS   5) Converted from Fortran to C in November 1997.
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+#include <math.h>
 #include "moldyn.h"
+
+long unsigned int get_tick()
+{
+   struct timespec ts;
+   if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) return (0);
+   return ts.tv_sec*(long int)1000 + ts.tv_nsec / (long int) 1000000;
+}
 
 int main ( int argc, char *argv[])
 {
@@ -66,8 +75,11 @@ int main ( int argc, char *argv[])
       force (&potential, &virial, rx, ry, rz, fx, fy, fz, sigma, rcut, vrcut, dvrc12, dvrcut, head, list, mx, my, mz, natoms,0, sfx, sfy, sfz);
   // printf ("\nReturned from force: potential = %f, virial = %f, kinetic = %f\n",potential, virial, kinetic);
 //   output_particles(rx,ry,rz,vx,vy,vz,fx,fy,fz,0);
+   long double elapsedTime = (float)0.0;
+   long unsigned int startTime;
+   long unsigned int endTime;
 
-
+   startTime = get_tick();
    for(step=1;step<=nstep;step++){
      // if(step>=85)printf ("\nStarted step %d\n",step);
       movea (rx, ry, rz, vx, vy, vz, fx, fy, fz, dt, natoms);
@@ -85,7 +97,10 @@ int main ( int argc, char *argv[])
       sum_energies (potential, kinetic, virial, &vg, &wg, &kg);
       hloop (kinetic, step, vg, wg, kg, freex, dens, sigma, eqtemp, &tmpx, &ace, &acv, &ack, &acp, &acesq, &acvsq, &acksq, &acpsq, vx, vy, vz, iscale, iprint, nequil, natoms);
    }
-
+   endTime = get_tick();
+   elapsedTime += endTime - startTime;
+   elapsedTime = elapsedTime / (float) 1000;
+   printf("\n%Lf seconds have elapsed\n", elapsedTime);
    tidyup (ace, ack, acv, acp, acesq, acksq, acvsq, acpsq, nstep, nequil);
    
    return 0;
