@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <cuda.h>
 #include "matthew_CUDA.h"
+#include <time.h>
+
+
 void hloop (float kinetic, int step, float vg, float wg, float kg, float freex, float dens, float sigma, float eqtemp, float *tmpx, float *ace, float *acv, float *ack, float *acp, float *acesq, float *acvsq, float *acksq, float *acpsq, float *vx, float *vy, float *vz, int iscale, int iprint, int nequil, int natoms, int block_width, float *d_vx, float *d_vy, float *d_vz)
 {
    float e, en, vn, kn, pres;
@@ -13,6 +16,8 @@ void hloop (float kinetic, int step, float vg, float wg, float kg, float freex, 
    *tmpx = 2.0*kg/freex;
    pres = dens*(*tmpx) + wg;
    pres = pres*sigma*sigma*sigma;
+   long unsigned int startTime;
+   long unsigned int endTime;
    
    if (step>nequil) {
       *ace += en;

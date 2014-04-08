@@ -6,11 +6,20 @@ __kernel void moveb (__global float *kineticArray, __global float *vx, __global 
    dt2 = dt*0.5;
    __local float kinetic[BLOCK_WIDTH];
    kinetic[get_local_id(0)] = 0;
+   __private float vxElement;
+   __private float vyElement;
+   __private float vzElement;
    if (element < natoms){
-      vx[element] = vx[element] + dt2*fx[element];
-      vy[element] = vy[element] + dt2*fy[element];
-      vz[element] = vz[element] + dt2*fz[element];
-      kinetic[get_local_id(0)] += vx[element]*vx[element] + vy[element]*vy[element] + vz[element]*vz[element];
+      vxElement = vx[element];
+      vyElement = vy[element];
+      vzElement = vz[element];
+      vxElement = vxElement + dt2*fx[element];
+      vyElement = vyElement + dt2*fy[element];
+      vzElement = vzElement + dt2*fz[element];
+      kinetic[get_local_id(0)] += vxElement*vxElement + vyElement*vyElement + vzElement*vzElement;
+      vx[element] = vxElement;
+      vy[element] = vyElement;
+      vz[element] = vzElement;
    }
    int stride;
    for (stride = get_local_size(0)/2; stride > 0; stride>>=1)

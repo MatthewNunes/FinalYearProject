@@ -47,6 +47,7 @@ extern void copyStep(int *ste);
 extern void copySfx(float *sf);
 extern void copySfy(float *sff);
 extern void copySfz(float *sfff);
+extern long unsigned int get_tick();
 //__global__ void force (float *virialArray, float *potentialArray, float *pval, float *vval, float *rx, float *ry, float *rz, float *fx, float *fy, float *fz, int *head, int *list);
 __global__ void force(float *virialArray, float *potentialArray, float *rx, float *ry, float *rz, float *fx, float *fy, float *fz, float sigma, float rcut, float vrcut, float dvrc12, float dvrcut, int *head, int *list, int mx, int my, int mz, int natoms, float sfx, float sfy, float sfz);
 extern void movout (float *rx, float *ry, float *rz, float *vx, float *vy, float *vz, float sfx, float sfy, float sfz, int *head, int *list, int mx, int my, int mz, int natoms);

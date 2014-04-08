@@ -388,8 +388,7 @@ int main ( int argc, char *argv[])
 
    global_size[0] = BLOCK_WIDTH * ceil(natoms / (float) BLOCK_WIDTH);
    local_size[0] = BLOCK_WIDTH;
-   long double elapsedTimeExecuting = (float)0.0;
-   long double elapsedTimeMoving = (float)0.0;
+   long double elapsedTime = (float)0.0;
    long unsigned int startTime;
    long unsigned int endTime;
    
@@ -438,10 +437,10 @@ int main ( int argc, char *argv[])
 
   // printf ("\nReturned from force: potential = %f, virial = %f, kinetic = %f\n",potential, virial, kinetic);
 //   output_particles(rx,ry,rz,vx,vy,vz,fx,fy,fz,0);
-
+   startTime = get_tick();
    for(step=1;step<=nstep;step++){
      // if(step>=85)printf ("\nStarted step %d\n",step);
-    startTime = get_tick();
+    
     err = clSetKernelArg(moveaKernel, 0, sizeof(cl_mem), &d_rx);
     err |= clSetKernelArg(moveaKernel, 1, sizeof(cl_mem), &d_ry);
     err |= clSetKernelArg(moveaKernel, 2, sizeof(cl_mem), &d_rz);
@@ -464,10 +463,7 @@ int main ( int argc, char *argv[])
         exit(1);   
       }
       clFinish(queue);
-      endTime = get_tick();
-      elapsedTimeExecuting += (endTime - startTime);
-
-      startTime = get_tick();
+    
       err = clSetKernelArg(initialMovoutKernel, 0, sizeof(cl_mem), &d_rx);
       err |= clSetKernelArg(initialMovoutKernel, 1, sizeof(cl_mem), &d_ry);
       err |= clSetKernelArg(initialMovoutKernel, 2, sizeof(cl_mem), &d_rz);
@@ -482,10 +478,7 @@ int main ( int argc, char *argv[])
         exit(1);   
       }
       clFinish(queue);
-      endTime = get_tick();
-      elapsedTimeExecuting += (endTime - startTime);
       
-      startTime = get_tick();
       err = clEnqueueReadBuffer(queue, d_rx, CL_TRUE, 0, sizeof(float) * natoms, rx, 0, NULL, NULL);
       err |= clEnqueueReadBuffer(queue, d_ry, CL_TRUE, 0, sizeof(float) * natoms, ry, 0, NULL, NULL);
       err |= clEnqueueReadBuffer(queue, d_rz, CL_TRUE, 0, sizeof(float) * natoms, rz, 0, NULL, NULL);
@@ -502,14 +495,11 @@ int main ( int argc, char *argv[])
        exit(1);   
       }
       clFinish(queue);
-      endTime = get_tick();
-      elapsedTimeMoving += (endTime - startTime);
 //      check_cells(rx, ry, rz, head, list, mx, my, mz, natoms,step,step);
     //  if(step>85)printf ("\nReturned from movea\n");
       movout (rx, ry, rz, vx, vy, vz, sfx, sfy, sfz, head, list, mx, my, mz, natoms);
    //  if(step>85) printf ("\nReturned from movout\n");
   //    check_cells(rx, ry, rz, head, list, 
-   startTime = get_tick();
    clReleaseMemObject(d_rx);
    clReleaseMemObject(d_ry);
    clReleaseMemObject(d_rz);
@@ -540,10 +530,7 @@ int main ( int argc, char *argv[])
      perror("Couldn't create a list buffer");
      exit(1);   
    }      
-   endTime = get_tick();
-   elapsedTimeMoving += (endTime - startTime);
 
-   startTime = get_tick();
    err = clSetKernelArg(force_kernel, 0, sizeof(cl_mem), &d_virialArray);
    err |= clSetKernelArg(force_kernel, 1, sizeof(cl_mem), &d_potentialArray);
    err |= clSetKernelArg(force_kernel, 2, sizeof(cl_mem), &d_rx);
@@ -581,11 +568,8 @@ int main ( int argc, char *argv[])
         exit(1);   
       }
       clFinish(queue);
-      endTime = get_tick();
-      elapsedTimeExecuting += (endTime - startTime);
       //float fxTest[natoms];
       //size_t sizy = sizeof(float) * (natoms);
-      startTime = get_tick();
       err = clEnqueueReadBuffer(queue, d_virialArray, CL_TRUE, 0, sizeof(float) * numBlocks, virialArrayTemp, 0, NULL, NULL);
       err |= clEnqueueReadBuffer(queue, d_potentialArray, CL_TRUE, 0, sizeof(float) * numBlocks, potentialArrayTemp, 0, NULL, NULL);
       if(err < 0) {
@@ -600,8 +584,6 @@ int main ( int argc, char *argv[])
         printf("CL_OUT_OF_HOST_MEMORY: %d\n", CL_OUT_OF_HOST_MEMORY);
         exit(1);   
       }
-      endTime = get_tick();
-      elapsedTimeMoving += (endTime - startTime);
       //numInc = 0;
       //globalThreads = ceil(numBlocks / (float)BLOCK_WIDTH);
      // startTime = get_tick();
@@ -618,7 +600,6 @@ int main ( int argc, char *argv[])
 
 //      if(step>85)printf ("\nReturned from force: potential = %f, virial = %f, kinetic = %f\n",potential, virial, kinetic);
  //     fflush(stdout);
-      startTime = get_tick();
       err = clSetKernelArg(movebKernel, 0, sizeof(cl_mem), &d_kineticArray);
       err |= clSetKernelArg(movebKernel, 1, sizeof(cl_mem), &d_vx);
       err |= clSetKernelArg(movebKernel, 2, sizeof(cl_mem), &d_vy);
@@ -638,10 +619,7 @@ int main ( int argc, char *argv[])
        exit(1);   
       }
       clFinish(queue);
-      endTime = get_tick();
-      elapsedTimeExecuting += (endTime - startTime);
 
-      startTime = get_tick();
       err = clEnqueueReadBuffer(queue, d_kineticArray, CL_TRUE, 0, sizeof(float) * numBlocks, kineticArray, 0, NULL, NULL);
       if(err < 0) {
        printf("%d\n",err );
@@ -654,8 +632,6 @@ int main ( int argc, char *argv[])
        printf("CL_OUT_OF_HOST_MEMORY: %d\n", CL_OUT_OF_HOST_MEMORY);
        exit(1);   
       }
-      endTime = get_tick();
-      elapsedTimeMoving += (endTime - startTime);
       int stepInd = 0;
       for (stepInd = 1; stepInd < numBlocks; stepInd++)
       {
@@ -670,13 +646,11 @@ int main ( int argc, char *argv[])
       hloop (kinetic, step, vg, wg, kg, freex, dens, sigma, eqtemp, &tmpx, &ace, &acv, &ack, &acp, &acesq, &acvsq, &acksq, &acpsq, vx, vy, vz, iscale, iprint, nequil, natoms, &scaletKernel, &queue, &d_vx, &d_vy, &d_vz);
 
    }
-
-
+   endTime = get_tick();
+   elapsedTime += (endTime - startTime);
    tidyup (ace, ack, acv, acp, acesq, acksq, acvsq, acpsq, nstep, nequil);
-   elapsedTimeExecuting = elapsedTimeExecuting / (float) 1000;
-   elapsedTimeMoving = elapsedTimeMoving / (float) 1000;
-   printf("\n%Lf seconds have elapsed executing\n", elapsedTimeExecuting);
-   printf("\n%Lf seconds have elapsed moving\n", elapsedTimeMoving);
+   elapsedTime = elapsedTime / (float) 1000;
+   printf("\n%Lf seconds have elapsed \n", elapsedTime);
    
    return 0;
 }
