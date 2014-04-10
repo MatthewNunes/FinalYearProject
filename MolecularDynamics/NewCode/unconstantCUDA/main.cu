@@ -51,6 +51,7 @@ int main ( int argc, char *argv[])
    float potential, virial, kinetic;
    float tmpx;
    int i, icell;
+   int numberOfCells;
    //cudaSetDevice(2);
    ierror = input_parameters (&sigma, &rcut, &dt, &eqtemp, &dens, &boxlx, &boxly, &boxlz, &sfx, &sfy, &sfz, &sr6, &vrcut, &dvrcut, &dvrc12, &freex, &nstep, &nequil, &iscale, &nc, &natoms, &mx, &my, &mz, &iprint);
    //printf ("\nReturned from input_parameters, natoms = %d\n", natoms);
@@ -69,7 +70,7 @@ int main ( int argc, char *argv[])
    head= (int *)malloc((mx+2)*(my+2)*(mz+2)*sizeof(int));
    virialPointer = (float *)malloc(sizeof(float));
    potentialPointer = (float *)malloc(sizeof(float));
-
+   numberOfCells = mx * my * mz;
    
 
    
@@ -268,7 +269,8 @@ int main ( int argc, char *argv[])
       sum_energies (potential, kinetic, virial, &vg, &wg, &kg);
       hloop (kinetic, step, vg, wg, kg, freex, dens, sigma, eqtemp, &tmpx, &ace, &acv, &ack, &acp, &acesq, &acvsq, &acksq, &acpsq, vx, vy, vz, iscale, iprint, nequil, natoms);
    }
-
+   printf("\nNumber Of Cells: %d\n", numberOfCells);
+   printf("nsteps: %d\n", nstep + 1);
    tidyup (ace, ack, acv, acp, acesq, acksq, acvsq, acpsq, nstep, nequil);
    elapsedTime = elapsedTime / (float) 1000;
    printf("\n%Lf seconds have elapsed\n", elapsedTime);

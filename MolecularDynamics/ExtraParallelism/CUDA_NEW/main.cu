@@ -52,6 +52,7 @@ int main ( int argc, char *argv[])
    float tmpx;
    int i, icell;
    cudaSetDevice(0);
+   int numberOfCells;
    ierror = input_parameters (&sigma, &rcut, &dt, &eqtemp, &dens, &boxlx, &boxly, &boxlz, &sfx, &sfy, &sfz, &sr6, &vrcut, &dvrcut, &dvrc12, &freex, &nstep, &nequil, &iscale, &nc, &natoms, &mx, &my, &mz, &iprint);
    //printf ("\nReturned from input_parameters, natoms = %d\n", natoms);
   // CUDA_CHECK_RETURN(cudaSetDevice(1));
@@ -70,7 +71,7 @@ int main ( int argc, char *argv[])
    virialPointer = (float *)malloc(sizeof(float));
    potentialPointer = (float *)malloc(sizeof(float));
    kineticArray = (float *)malloc(sizeof(float) * ceil(natoms/(float)BLOCK_WIDTH));
-
+   numberOfCells = mx * my * mz;
 
    
 
@@ -247,6 +248,7 @@ int main ( int argc, char *argv[])
    elapsedTime += (endTime - startTime);
    tidyup (ace, ack, acv, acp, acesq, acksq, acvsq, acpsq, nstep, nequil);
    elapsedTime = elapsedTime / (float) 1000;
+   printf("Number Of Cells: %d\n", numberOfCells);
    
    printf("\n%Lf seconds have elapsed\n", elapsedTime);
    cudaFree(d_fx);
