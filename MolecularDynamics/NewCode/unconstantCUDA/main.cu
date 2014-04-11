@@ -129,8 +129,8 @@ int main ( int argc, char *argv[])
       long double elapsedTime = (float)0;
       long unsigned int startTime;
       long unsigned int endTime;
-      printf("numBlocks: %d\n", numBlocks);
-      printf("BLOCK_WIDTH: %d\n", BLOCK_WIDTH);
+      //printf("numBlocks: %d\n", numBlocks);
+      //printf("BLOCK_WIDTH: %d\n", BLOCK_WIDTH);
       //copySigma(&sigma);
       //printf("main sigma: %f\n", sigma);
       /**
@@ -269,8 +269,8 @@ int main ( int argc, char *argv[])
       sum_energies (potential, kinetic, virial, &vg, &wg, &kg);
       hloop (kinetic, step, vg, wg, kg, freex, dens, sigma, eqtemp, &tmpx, &ace, &acv, &ack, &acp, &acesq, &acvsq, &acksq, &acpsq, vx, vy, vz, iscale, iprint, nequil, natoms);
    }
-   printf("\nNumber Of Cells: %d\n", numberOfCells);
-   printf("nsteps: %d\n", nstep + 1);
+   //printf("\nNumber Of Cells: %d\n", numberOfCells);
+   //printf("nsteps: %d\n", nstep + 1);
    tidyup (ace, ack, acv, acp, acesq, acksq, acvsq, acpsq, nstep, nequil);
    elapsedTime = elapsedTime / (float) 1000;
    printf("\n%Lf seconds have elapsed\n", elapsedTime);
