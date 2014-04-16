@@ -1,0 +1,1 @@
+nvcc -I./ cudaImageBlurring.cu lodepng.c -o cudaImageBlurring
